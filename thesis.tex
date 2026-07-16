@@ -1,0 +1,288 @@
+\documentclass[12pt]{report}
+
+% FIX: "Option clash for package url" -- pdfx carica internamente hyperref, che a sua
+% volta carica internamente url SENZA l'opzione hyphens. Se poi più giù si fa
+% \usepackage[hyphens]{url}, url risulta già caricato con opzioni diverse -> clash.
+% Soluzione: registrare l'opzione con \PassOptionsToPackage PRIMA di pdfx, cosi quando
+% hyperref (dentro pdfx) carica url, lo fa gia con hyphens attivo. Non serve piu
+% \usepackage[hyphens]{url} esplicito piu sotto.
+\PassOptionsToPackage{hyphens}{url}
+
+\usepackage[a-1b]{pdfx}
+\usepackage{cjhebrew}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+
+\usepackage[a4paper, margin=2.5cm]{geometry} %Margini
+
+\def\UrlBreaks{\do\/\do-\do_\do.} % Caratteri di spaziatura bibliografia
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{csquotes}
+% \usepackage[italian]{babel} % Italianizza dettagli del documento
+
+\usepackage{mathptmx}
+
+\usepackage{algorithm} % Pseudocodice
+\usepackage{algpseudocode} % Pseudocodice
+% \floatname{algorithm}{Algoritmo} % Traduzione label
+
+\usepackage[nottoc]{tocbibind} % Indice delle figure nel toc
+
+\usepackage{multicol} % Due sezioni disposte per riga
+
+\usepackage[backend=biber,sorting=none,block=space]{biblatex} % Bibliografia
+\addbibresource{biblio.bib}
+
+\usepackage{titlesec}
+\usepackage{epigraph}
+\epigraphnoindent
+\setlength{\epigraphrule}{0.4pt}
+\newcommand{\blankpage}{
+    \newpage
+    \thispagestyle{empty}
+    \mbox{}
+}
+
+\titleformat{\chapter}
+{\normalfont\huge\bfseries}
+{\thechapter}
+{1em}
+{}
+
+\titleformat{\section}
+{\normalfont\LARGE\bfseries}
+{\thesection}
+{1em}
+{}
+
+\titleformat{\subsection}
+{\normalfont\Large\bfseries}
+{\thesubsection}
+{1em}
+{}
+
+\usepackage{setspace}
+\onehalfspacing
+
+% \setlength{\parindent}{0pt} % No tab a inizio paragrafo
+
+\title{Bio-inspired learning for motion planning of collaborative robots}
+\author{Davide D'Acunto}
+\date{Ottobre 2026}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	citecolor=blue,
+	urlcolor=blue,
+	pdftitle={Bio-inspired learning for motion planning of collaborative robots},
+	pdfauthor={Davide D'Acunto}
+}
+
+\begin{document}
+
+\numberwithin{figure}{chapter}
+\numberwithin{table}{chapter}
+\begin{titlepage}
+    \centering
+    % \vspace*{.5cm}
+
+    \textbf{\Huge Università degli Studi di Salerno}
+
+    \vspace{0.5cm}
+    \huge Dipartimento di Ingegneria dell'Informazione ed Elettrica e Matematica Applicata
+    
+    \vspace{0.5cm}
+
+    \LARGE Corso di Laurea Magistrale in Ingegneria Informatica (LM-32)
+
+    \vspace{0.5cm}
+    \includegraphics[width=170pt]{images/logo.png}
+
+    \vspace{0.5cm}
+    \huge Master Thesis in Natural Computation 
+
+    \vspace{0.5cm}
+    \textbf{\huge Bio-inspired learning for motion planning of collaborative robots}
+
+    \vspace{0.5cm}
+
+    \begin{multicols}{2}
+    \raggedright \textbf{\Large Supervisors:} \\
+    \Large \raggedright Prof. Angelo Marcelli \\
+    \Large \raggedright Prof. Pasquale Chiacchio \\
+
+    \columnbreak
+    \raggedleft \textbf{\Large Candidate:} \\
+    \raggedleft \Large Davide D'\!Acunto \\
+    \raggedleft \Large Num. 0622702524
+
+    \end{multicols}
+    \vspace{.5cm}
+    Academic Year 2024/25
+
+\end{titlepage}
+\pagenumbering{gobble}
+\null\vfill
+\epigraph{Then what is your hand for?}{\textit{Rei Ayanami, End of Evangelion}}
+\smallskip
+\epigraph{To effectively contain a civilization's development and disarm it across such a long span of time, there is only one way: kill its science.
+}{\textit{Liu Cixin, The Three-Body Problem}}
+\smallskip
+\epigraph{If one's different, one's bound to be lonely.}{\textit{Aldous Huxley, Brave New World}}
+\smallskip
+\epigraph{The saddest aspect of life right now is that science gathers knowledge faster than society gathers wisdom.}{\textit{Isaac Asimov, Book of Science and Nature Questions}}
+\epigraph{\cjRL{'mt}}{\textit{The Golem of Prague}}
+\smallskip
+\epigraph{The true measure of a man is not his intelligence or how high he rises in this freak establishment. No, the true measure of a man is this: how quickly can he respond to the needs of others and how much of himself he can give.}{\textit{Philip K. Dick, Our Friends}}
+\vfill
+\blankpage
+
+\chapter*{Acknowledgements}
+\pagenumbering{Roman}
+Write acknowledgements here.
+\tableofcontents
+\listoffigures
+\listoftables
+
+\clearpage
+
+\pagenumbering{arabic}
+
+\chapter*{Introduction}
+
+\chapter{State of the art}
+The following section discusses the current advancements in human-robot interaction, and the limitations of the current literature. The goal is to provide a comprehensive overview of the state of the art in this field, highlighting the key challenges and opportunities for future research.  
+\section{Current research in human-robot interaction}
+Some studies have already defined a way to quantify the comfort of a robot's motion \cite{coccaro}, others have investigated humans ability to detect if a robot movement reflects a human-like motion or not, comparing sight and proprioception skills \cite{touchvsvision}. Intent communication through motion is a well-studied topic \cite{leadership} a robot could tell in advance its plan through its movements to become predictable and thus more comfortable to interact with. Some research have already been done in that way, by evaluating the human signature and replicating in a collaborative task with a simulated user \cite{motion_signature}.
+
+First, to teach a robot to move in a human-like way, it is necessary to understand how humans move. The theory of kinematics of rapid human movements describes motion as a sequence of lognormal strokes, motor primitives generated by the Central Nervous System, treated as building blocks of complex movements that can be superimposed \cite{lognorm_principle}. By understanding the underlying principles of human motion, a software has been developed that extracts the lognormal parameters from human movements \cite{idelog3d}. This software can be applied over a dataset of human movements to extract the lognormal parameters and then use them to generate new movements that are similar to the original ones through a generative model, which could be a neural network or a more biologically plausible model. 
+
+Then, it could be possible to study how to adapt the robot's motion to the human partner's dynamics, by integrating bio-inspired adaptive mechanisms that modulate the robot's movement in response to human actions. This could reduce both physical and cognitive workload during interaction, making the collaboration more efficient and comfortable for both parties. This information could be given by teaching the model to predict the human's next movement through the leader follower dynamics, and adapt the movement signature to the human's one. If the human signature is not available, the robot could learn it through interaction, by observing their movements and adapting its own motion accordingly.
+
+However, while the theory of kinematics of rapid human movements provides a framework for understanding human motion, the planning of robot motion is a complex problem that requires the integration of multiple factors. 
+
+
+
+% Since humans associate anthropomorphic motion with comfort, an important challenge in physical human-robot interaction is to endow robots with generative mechanisms capable of approximating human motor behavior. The kinematic theory of rapid human movements describes motion as a sequence of lognormal strokes, motor primitives generated by the Central Nervous System, treated as building blocks that can be superimposed to generate complex movements. Moreover, since collaboration requires adaptation to a partner's dynamics, bio-inspired adaptive mechanisms can be integrated to modulate the robot's movement in response to human actions, reducing both physical and cognitive workload during interaction.
+
+\section{Literature limitations}
+
+\chapter{Proposed Solution}
+This chapter gives a comprehensive overview of the solution adopted to address the problem at hand, spanning from the experimental protocol chosen data collection mechanism, described in its software and hardware components, to the data processing tools. The goal is to provide a clear understanding of the choice, and the reasoning behind them, in order to justify the proposed solution and its effectiveness in addressing the problem at hand.
+\section{Methodology}
+For this problem, various software and hardware components are required, ranging from the collection of the data to its processing and analysis, then to the generation of new data and its execution on the very same system that collected the original data. 
+
+In the data collection mechanism, the system must interface itself with a human subject, showing them a path to follow and collecting their movements as they execute the task. The result of this process is a dataset that contains the various trajectories of the subjects' movements, which can be used to analyze their behavior and extract useful information for the generation of new movements.
+
+Rather than giving the raw data to a neural network, which would slow down the learning process by increasing its complexity, the data is processed to extract more meaningful information, which will speed up the learning process and make it more efficient. So, by the combination of a theoretical model and data-driven techniques, a bio-inspired generative model can be developed.
+
+The generated movements can then be executed on the same system that collected the original data, allowing for a "hand to hand" comparison between the original and generated movements, through the dyadic interaction between the human subject and the system
+
+\section{System Design}
+What is the data collection mechanism, i.e. set of software components that are exercised to collect data?
+\subsection{Haptic Device}
+\subsection{Haptic Interface Software}
+The haptic interface software manages both the user interface of the haptic device and the communication with the robot.
+
+From the side of the experimenter, the software component allows them to control the experiment execution, by selecting its configurations, like the path to show, the number of repetitions, the sampling frequency, and so on.
+
+From the side of the human subject, the software component interfaces with them through a simulated environment that projects the position of the haptic device inside a virtual space. In this space, the path is represented as an ordered sequence of spheres, while the device is represented as a sphere that can be moved by the user through their interaction with the device.
+
+The software component aids the user in following the path by providing them with visual and haptic feedback. The visual feedback is given by changing the color of the spheres that represent the path, while the haptic feedback is given by applying forces to the device that guide the user towards the path. Though, since this would poison the data, the visual and haptic feedback is disabled during the data collection phase. This is because the goal of the experiment is to collect data that reflects the user's natural movements, without any external influence, while taking into account the fact that the user is aware of the path they are supposed to follow. Nonetheless, the more accurate the user is in following the path, the more accurate the collected data will be, and thus the more accurate the generative model will be. Although, this goes in pair with the number of repetitions, paths and waypoints. This is a trade-off between the accuracy of the data, the naturalness of the user's movements and the possible sample poisoning by their fatigue. 
+
+\section{Protocol Design}
+Concerning the experimental protocol and the experimental design, the objective is relatively straightforward: to collect a dataset of human movements from which to train a generative model. This data should reflect the natural planned movements of the human subject, without any external influence.
+
+To ensure consistency across different subjects, the experimental protocol should be designed to minimize any potential biases or confounding factors that could affect the results. For instance, it is necessary to simplify some complex terms by finding more intuitive and user-friendly ways to explain them, so to ensure user comprehension and engagement. Additionally, the protocol should be designed to minimize any potential sources of error or variability in the data collection process, such as differences in the user's physical abilities or environmental factors that could affect their movements. This last point is particularly important, since the experiment is designed to be executed in a laboratory environment, where the user is asked to sit on a chair and interact with the system through a haptic device. The laboratory environment should minimize any potential distractions or sources of noise that could affect the user's movements and the data collection process. Also, the environment must be designed to ensure the user's safety and comfort, by providing them with a comfortable chair and ensuring that the haptic device is properly calibrated and adjusted to their physical characteristics (i.e. dominant hand, arm length, height, etc.) to reduce any potential sources of discomfort or fatigue and increase comfort during the experiment.   
+
+The more the user feels relaxed, the more natural their movements will be, and thus the more accurate the collected data will be. Nonetheless, the user is aware of the fact that they are being observed and that their movements are being recorded, which could affect their behavior and introduce some bias in the collected data. To prevent this kind of bias, the user should be informed about the purpose of the experiment and the data collection process, and they should be given the opportunity to ask questions and provide feedback. This will help to ensure that the user feels comfortable and engaged in the experiment, and that they are motivated to perform their best. Of course, any reveal of the purpose of the experiment should be done in a way that doesn't influence the user's behavior, and thus bias the collected data.
+\subsection{Experiment Description}
+The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.  
+
+% In this scenario, the users interact with a system that shows them an ordered sequence of waypoints in the space, namely a path, and they are asked to follow them with their hand. As they move, the system collects the trajectory of their movements, expressed as an ordered sequence of timestamped points with respect to a reference frame. For convenience, the reference frame is assumed to be the robot's base frame, and the points are expressed in Cartesian coordinates, each sampled at a fixed frequency.
+
+% Regarding the waypoints, they are represented as spheres in the virtual space, and the user is asked to use the haptic device to cross them through a projection of the position of the device in the virtual space. The main issue that arose during the design of the experiment is how to make the user grasp the path, such that they can easily obtain a mental representation of it. This represents a challenge, since the user has to be able to follow the path with their hand, while also being able to understand its shape and orientation in a three-dimensional space projected over a two-dimensional screen. 
+
+% Another crucial aspect of the path is the curvature, and how to represent a curvature in this virtual space. The idea to fill the path with many waypoints can help the user understanding the presence of a curvature, but it would also make the movement forced. Nonetheless, a high number of waypoints would crowd the virtual space, making it instead more difficult for the user to understand the path. 
+
+Each experiment does have various parameters that have to be tuned in a trade-off between the accuracy of the collected data, their naturalness, the fatigue of the user, the length of the experiment and the amount of data collected. The parameters that can be tuned are:
+\begin{itemize}
+
+    \item $W_s$: The size of the spheres that represent the waypoints of the paths, which can be increased to make it easier for the user to follow the path, but at the cost of reducing the accuracy of the collected data. A bigger sphere would require less training and less precision from the user, but it would also make the collected data less accurate, since the user would be able to deviate more from the path without being penalized. On the other hand, a smaller sphere would require more training and more precision from the user, but it would also make the collected data more accurate, since the user would be forced to follow the path more closely. Although, this forceful guidance could lead to unnatural movements, unnatural to a human, which would be detrimental to the generative model. 
+    \item $P_l$: The number of waypoints of a path, which can be increased to make the path more complex, at the cost of increasing the difficulty for the user to follow the path. A more complex path would require more training and heavier cognitive effort, while increasing the data collected. Conversely, a simpler path would require less training and less cognitive effort, while reducing the data collected. The complexity of the path needs to be balanced with the user's ability to follow it, to collect accurate and natural data.
+    \item $P_r$: The number of repetitions for each path, which can be increased to collect more data, at the cost of increasing the fatigue of the user and the length of the experiment. This parameter comes at the cost of making brief rest periods between repetitions, which would compensate the user's fatigue, but at the cost of greatly increasing the time duration of the full experiment session.
+    \item $N_P$: The number of paths, which can be increased to collect more diverse data, at the cost of increasing the length of the experiment. More paths would provide a better representation of the task space and allow to more generalization, but would also require more time and effort from the user. Although, having a few paths would limit the diversity of the data collected, and thus the generalization of the generative model.
+    \item $R_l$ and $R_f$: The rest periods length and frequency (expressed as a fraction of $N_P$), which can be increased to reduce the fatigue of the user, at the cost of increasing the length of the experiment. The rest periods need to be short to keep the user focused on the task, but long enough to allow them to recover from their fatigue, while not being felt coercive by the user. Moreover, the rest periods need to be frequent enough to allow the user to recover from their fatigue while executing the different paths, but not too frequent to make the user lose focus on the task. 
+\end{itemize}
+% In the end, it is safe to assume that the parameters that can be tuned are $W_s$, $P_l$, $P_r$, $N_P$, $R_l$ and $R_f$. Another parameter would've been the sampling frequency, but it was set to the maximum possible frequency allowed by the hardware in order to collect the higher amount of data possible. In the end, the amount of short movements collected are the following: \begin{equation}
+%     N_M = N_P \cdot P_r \cdot \overline{P_l}, \qquad \overline{P_l} = \frac{1}{N_P} \sum_{i=1}^{N_P} P_{l_i}
+% \end{equation}
+% On the other hand, the time length of the experiment is given by the following equation:
+% \begin{equation}
+%     T_E = P_r \cdot T_{P_i} + R_f \cdot R_l + T_0, \qquad \overline{T_{P_l}} = \frac{1}{N_P} \sum_{i=1}^{N_P} T_{P_{l_i}}
+% \end{equation}
+% Where $T_0$ is the time required to set up the experiment and introduce it to the human subject, and $T_{P_i}$ is the time required to execute the $i$-th path, taking into account the training time, which is given by the following equation:
+% \begin{equation}
+%     T_{P_i} = P_{l_i} \cdot W_s \cdot L_{i}
+% \end{equation}
+% Where $L_i$ refers to the workload of the user during the execution of the $i$-th path. It is not a value that can be directly extracted through a math equation, though it is possible to split it into components: the overall effort used in the experiment session, the effect of the overall time and the breaks on the user. The overall effort is given by the following equation:
+% \begin{equation}
+%     L_{i} = 
+% \end{equation}
+\subsection{Path Description}
+A path, in simple terms, is represented by an ordered sequence of waypoints in the space. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. On the other hand, a human subject's perception of a three-dimensional space is not mathematical, and thus it is not as precise as a model's perception. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path, which can be achieved by using visual and haptic feedback. The visual feedback is given by showing a set of spheres in the space, each representing a waypoint of the path and colored in a way that indicates the order in which they should be visited. The haptic feedback is given by applying forces to the haptic device that guide the user towards the path, making it easier for them to follow it in a pre-training phase. 
+
+A path should represent a common task that a human subject could perform in their daily life, such as moving an object from one place to another, or following a specific trajectory. The path should be designed to be as intuitive and natural as possible, ensuring that the subject grasps and performs it smoothly. 
+
+The pre-training phase is a crucial step in the experimental protocol, as it allows the user to familiarize themselves with the path and the haptic device, and to develop a mental representation of the path that they can use during the data collection phase. The pre-training phase should be designed to be as intuitive and user-friendly as possible, to ensure that the user can easily grasp the path and follow it accurately.
+
+Each path will have a pre-training phase, in which the user is asked to follow the path with the help of visual and haptic feedback. Through the executions, the guidance slowly fades as the user improves in following the path, after a certain number of executions the guidance stops and the user is on their own. That is when the data collection phase starts. 
+
+The only issue with this representation of the path is that is only takes into account direct links between waypoints. However, humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution.
+
+An idea to represent this aspect could be the introduction of arrows in the visual environment, although this means crowding it with more information, that could be distracting or hard to interpret for the user. Also, this requires defining another tunable parameter, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, and a specific size. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. 
+
+The catch is that the experimental protocol must now specify two policies. First, the user should try to move as fast as possible, second, the user should try to store momentum by not stopping on each waypoint, but making curves during the execution. In order to satisfy both the policies, the user will have to move across the waypoints through a series of smooth, fluid, rapid movements, rather than making a break on each waypoint.
+\subsection{Result Description}
+For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with sufficient accuracy.
+
+Those are the same inputs and outputs of a generative model, with the exception that it won't follow the same policies, but only understand the underlying principles from the dataset. 
+
+\section{Data Processing Software}
+
+The data processing software is responsible for analyzing the collected dataset of human movements and extracting meaningful information that can be used to train a generative model, instead of giving the raw data to the model, which would slow down the learning process by increasing its complexity.
+
+\subsection{Time Characterization}
+In particular, the crucial information that can be extracted from the dataset is the lognormal parameters of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones. 
+
+In literature there are already some software components that can extract the lognormal parameters from human movements, such as the \textit{idelog3d} software. Once this software is applied to the dataset, it will output a new dataset that contains the parameters of each rapid movement across two waypoints, which can be learned by the generative model. Once trained, the model can provide the velocity profile of a new movement across two waypoints through the application of the lognormal parameters.
+
+\subsection{Space Characterization}
+Regarding the spatial characterization of the movements, it would be handy to develop a software able to characterize the spatial properties of the movements, such as the starting and ending points, the curvature, the length and so on. In other words, the software should be able to extract the spatial properties of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones.
+
+This software component should be able to provide the generative model with properties that are independent of the time characterization and explained by the scientific literature.
+
+\section{Generative Model}
+The generative model is trained with the dataset of movements, extended with the temporal and spatial characterizations, to learn the underlying principles of human motion. Once trained, the model can generate new movements that are similar to the original ones, by providing the path in the space and its time characterization through a velocity profile derived from the lognormal parameters. The generated movements can then be executed on the same system that collected the original data.
+\chapter{Experimental Validation}
+
+\section{Experimental Data}
+Through the executions of the experiments, the system collects a dataset of human movements, expressed as a sequence of timestamped points in the space, with respect to the reference frame. 
+
+\section{Experimental Protocol}
+
+\section{Results}
+
+\section{Statistical Significance}
+
+\chapter{Conclusion}
+Write the conclusion here.
+\printbibliography
+\end{document}
