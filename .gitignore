@@ -13,3 +13,4 @@ pdfa*
 *.run.xml
 *.synctex.gz
 *.toc
+*-SAVE-ERROR
