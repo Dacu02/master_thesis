@@ -14,3 +14,4 @@ pdfa*
 *.synctex.gz
 *.toc
 *-SAVE-ERROR
+*.puml
