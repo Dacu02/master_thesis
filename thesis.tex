@@ -188,7 +188,7 @@ This inadequacy of expressing ourselves through touch reflects on the way new hu
 
 Endowing robots with the ability to move in a human-like way, to touch and be touched, to communicate and understand each other through the sense of touch, is a challenge that requires a deep understanding of human motion and the ability to replicate it in a robot. A predefined interaction protocol is not enough to achieve this goal, since it doesn't allow the robot to adapt to the human's movements, neither to predict them. 
 
-This aspect does not only regard collaborative, industrial related tasks, but also social and assistive robotics, where the robot has to understand the human's feeling and emotions, and adapt its behavoir on the fly, to provide a more natural and comfortable interaction. A mandatory capability in hospital and elderly care.
+This aspect does not only regard collaborative, industrial related tasks, but also social and assistive robotics, where the robot has to understand the human's feeling and emotions, and adapt its behavior on the fly, to provide a more natural and comfortable interaction. A mandatory capability in hospital and elderly care.
 
 \chapter{State of the art}
 The following section discusses the current advancements in human-robot interaction, and the limitations of the current literature. The goal is to provide a comprehensive overview of the state of the art in this field, highlighting the key challenges and opportunities for future research.  
@@ -244,7 +244,7 @@ A path of two waypoints is simply a straight line between the two. On the other 
 \hypertarget{TODOELEMENT5}
 The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space. 
 
-\subsection{Paths Description}
+\subsection{Path Description}
 
 \hypertarget{TODOELEMENT1a}
 A path, in simple terms, is an ordered sequence of waypoints. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. However, a human's perception of a three-dimensional space is not mathematical, and thus it is not as accurate as the model one. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path.
@@ -257,7 +257,7 @@ The visual feedback is shown to the subject through the ordered sequence of sphe
 
 The haptic feedback is given to the subject through the haptic device's actuators, which apply forces to the subject's hand to guide them towards the path. These forces are applied toward the next waypoint, and let the user stay on each waypoint to give them time to memorize the positions of the waypoints. The more the user's ability to follow the path increases, the less the haptic feedback is applied. More importantly, the rest time on the waypoints is zeroed, since the user must follow the path without stopping on the waypoints. This should happen some time before the haptic feedback is removed, in order to let the user get used to the fact that they are supposed to follow the path without stopping on the waypoints.
 
-\subparagraph{Pre-Training} Both the haptic feedback and the visual feedback are not used during the recording phase, but rather in a previous phase called pre-training. During this step, the user is aided in following the path through the visual and haptic feedback, until a certain level of proficiency is reached. This level of proficiency is defined by the experimenter, and it is based on the user's ability to follow the path on their own. Once this level of proficiency is reached, the user can proceed to the recording phase, where they are asked to follow the path as they did, with neither haptic feedbacks nor visual feedbacks. 
+\subparagraph{Motor Representation} Both the haptic feedback and the visual feedback are not used during the recording phase, but rather in a previous phase called pre-training. During this step, the user is aided in following the path through the visual and haptic feedback, until a certain level of proficiency is reached. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. Once this representation is formed, the user starts to follow the path without any aid, in order to test this proficiency, the feedbacks are slowly removed, until they are completely disabled. The user is then asked to follow the path without any aid, while the system collects their movements. 
 
 \subparagraph{Curvature Representation}
 The only issue with representing a path only by a sequence of points is that it only takes into account direct links between waypoints. Humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution. This aspect must be extracted from the dataset and learned by the generative model, since it is a fundamental aspect of human motion.
@@ -266,17 +266,27 @@ An idea to make this aspect stand out from the collected data could be the intro
 
 \subsection{Path Taxonomy}
 \hypertarget{TODOELEMENT1}
-The paths that will be shown to the subject during the experiment belong to a certain category of tasks: \begin{itemize}
-    \item Slightly curve short paths, they represent simple and impulsive tasks like pushing or pulling a door. It is done in the three main directions of the space, in both senses, for a total of 6 paths. The curve is outwards to resemble a natural movement.
-    \item Mostly curve short paths, like the previous ones, but with a more pronounced inward curve and only in the outward sense, for a total of 3 paths. 
-    \item Poly line paths, or geometric figures: i.e. a triangle, a square, the letter "S"
-    \item Circular paths, correspond to a circle, two ellipses and a spiral, for a total of 4 paths.
-    \item Complex paths, which are a combination of the previous ones, for a total of 3 paths.
-    \item 
+The paths that will be shown to the subject during the experiment are grouped into the following categories: \begin{itemize}
+    \item Burst: impulsive movements. Simple paths that help the subject getting used to the haptic device. 
+    \begin{itemize}
+        \item Straight line over the $XY, YZ$ or $XZ$ planes
+        \item Semicircumference over the $XY, YZ$ or $XZ$ planes, with different arc lengths
+    \end{itemize}
+    \item Geometric: two- and three-dimensional round geometric shapes
+    \begin{itemize}
+        \item Spiral, growing over the $X$ or $Y$ axes
+        \item Ellipses, one in the $XY$ plane and the other in the $XZ$ plane
+        \item Circle, one in the $XY$ plane and the other in the $XZ$ plane
+    \end{itemize}
+    \item Symbol: letters of an alphabet
+    \begin{itemize}
+        \item Cursive lowercase L $\left(\ell\right)$ in 
+        \item Print uppercase S in an oblique plane
+        \item Cursive Greek Phi $\left(\varphi\right)$
+    \end{itemize}
+    \item Complex: unpredictable 
 \end{itemize}
 
-% \subparagraph{Path repetitions}
-% For each path shown to the subject, they will be asked to repeat it a certain number of times, which is a tunable parameter. The more repetitions are performed, the more data is collected, at the cost of increasing the fatigue of the user and the length of the experiment, eventually risking that the user forgets the path and thus the collected data is biased. 
 \section{Session Design}
 The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.
 \subsection{Sources of Bias}
@@ -345,7 +355,7 @@ In literature there are already some software components that can extract the lo
 \subsection{Spatial Characterization}
 Regarding the spatial characterization of the movements, it would be handy to develop a software able to characterize the spatial properties of the movements, such as the starting and ending points, the curvature, the length and so on. In other words, the software should be able to extract the spatial properties of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones.
 
-For instance, one possible spatial representation is the spline Beziér curve, which comes in handy since it doesn't always reach the target points, rather it tries to get as close as possible to them, which is what humans do when they move. The Beziér curve is defined by a set of control points, which can be used to define the shape of the curve. In order to teach a generative model to draw such lines, it is necessary to extract them from the actual path samples draw from the subjects movements.
+For instance, one possible spatial representation is the spline Bézier curve, which comes in handy since it doesn't always reach the target points, rather it tries to get as close as possible to them, which is what humans do when they move. The Bézier curve is defined by a set of control points, which can be used to define the shape of the curve. In order to teach a generative model to draw such lines, it is necessary to extract them from the actual path samples draw from the subjects movements.
 % This software component should be able to provide the generative model with properties that are independent of the time characterization and explained by the scientific literature.
 
 \section{Generative Model}
@@ -364,11 +374,12 @@ Regarding the aforementioned experimental parameters, the following values have 
     $P_l$ & Path length & 2-5 waypoints \\
     $P_r$ & Path repetitions & 20 repetitions \\
     $N_P$ & Number of paths & 20 paths \\
-    $R_t$ & Rest time & 1 minute \\
-    $R_f$ & Rest frequency & 0.2 \\
+    $R_t$ & Rest time & 60s \\
+    $R_f$ & Rest frequency & $1/6$ \\
     \hline
     \end{tabular}
 \end{table}
+As explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
 
 \section{Experimental Data}
 Through the executions of the experiments, the system collects a dataset of human movements, expressed as a sequence of timestamped points in the space, with respect to the reference frame. 

@@ -1,8 +1,10 @@
+import math
 from typing import Optional
 from math import comb
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  (registra il proiettore '3d')
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from matplotlib.colors import LinearSegmentedColormap
 import os
 
@@ -12,20 +14,58 @@ import os
 # ============================================================
 Path = list[tuple[float, float, float, float]|tuple[float, float, float]]
 _POLY  = dict(linestyle='--', linewidth=1.0, color='gray', alpha=0.55)
-_ANC2D = dict(marker='o', s=90, zorder=6, edgecolors='black', linewidths=0.8)
-_HDL2D = dict(marker='D', s=55, zorder=5, edgecolors='gray',  linewidths=0.7)
+_ANC   = dict(marker='o', s=90, zorder=6, edgecolors='black', linewidths=0.8)
+_HDL   = dict(marker='D', s=55, zorder=5, edgecolors='gray',  linewidths=0.7)
 
-# Dominio normalizzato: tutti gli assi vanno da 0 a 1, cosi' i plot di path
-# diversi restano confrontabili tra loro. NORM_MARGIN e' solo un piccolo
-# respiro visivo per non tagliare a meta' i marker che cadono esattamente
-# sul bordo (es. punto iniziale in (0,0)); non altera il dominio dei dati.
+# Dominio normalizzato: tutti gli assi (X, Y, Z) vanno da 0 a 1, cosi' i plot
+# di path diversi restano confrontabili tra loro. NORM_MARGIN e' solo un
+# piccolo respiro visivo per non tagliare a meta' i marker che cadono
+# esattamente sul bordo (es. punto iniziale in (0,0,0)); non altera il
+# dominio dei dati.
 NORM_MIN, NORM_MAX = 0, 1
 NORM_MARGIN = 0.05
 
 CMAP = LinearSegmentedColormap.from_list(
     'red_black_blue', [(1, 0, 0), (0, 0, 0), (0, 0, 1)], N=256
 )
-Z_NORM = plt.Normalize(vmin=NORM_MIN, vmax=NORM_MAX)
+# Il colore ora rappresenta l'ORDINE lungo il percorso (0 = waypoint 1 /
+# rosso, 1 = waypoint N / blu), non piu' la quota Z.
+ORDER_NORM = plt.Normalize(vmin=0.0, vmax=1.0) # type: ignore
+
+# ------------------------------------------------------------
+# Angolo di vista del plot 3D: yaw (azim), pitch (elev), roll.
+# Valori consigliati (vista quasi-isometrica, mostra bene curva + le tre
+# proiezioni sulle pareti): elev=28, azim=-55, roll=0.
+# Alternative utili:
+#   - vista "dall'alto" (per leggere bene la forma su XY, es. lettere):
+#     elev=65, azim=-90, roll=0
+#   - vista laterale (per leggere bene il profilo su Z):
+#     elev=8,  azim=-90, roll=0
+# ------------------------------------------------------------
+VIEW_YAW, VIEW_PITCH, VIEW_ROLL = -55, 28, 0
+
+# Se True, scambia il RUOLO degli assi Y e Z: cio' che prima compariva
+# sull'asse verticale Z viene disegnato sull'asse orizzontale "Y" e
+# viceversa (non e' un semplice specchio/inversione di direzione, e' uno
+# scambio di colonne dei dati + delle etichette).
+SWAP_Y_Z = True
+
+# Inverti la direzione di un asse (mantiene il ruolo dell'asse, ma lo fa
+# crescere nel verso opposto). Si applica DOPO l'eventuale SWAP_Y_Z, quindi
+# si riferisce sempre agli assi come appaiono nel plot finale.
+INVERT_Y_AXIS = False
+INVERT_Z_AXIS = False
+
+
+def maybe_swap_yz(arr: np.ndarray) -> np.ndarray:
+    """Se SWAP_Y_Z e' attivo, scambia le colonne Y (indice 1) e Z (indice 2)
+    di un array di punti (N, 3). Usata solo ai fini del plot, non tocca il
+    calcolo della curva di Bezier ne' i colori (basati sull'ordine)."""
+    if not SWAP_Y_Z:
+        return arr
+    swapped = arr.copy()
+    swapped[:, [1, 2]] = swapped[:, [2, 1]]
+    return swapped
 
 
 def bezier_curve(ctrl_pts: list[np.ndarray], weights: Optional[np.ndarray] = None,
@@ -51,21 +91,99 @@ def bezier_curve(ctrl_pts: list[np.ndarray], weights: Optional[np.ndarray] = Non
     return numerator / denominator[:, None]
 
 
-def draw_ctrl_numbered(ax, proj: np.ndarray, colors: np.ndarray) -> None:
-    """Poligono di controllo + punti colorati in base a Z, con numero di sequenza accanto a ciascuno."""
-    ax.plot(proj[:, 0], proj[:, 1], **_POLY)
-    ax.scatter(proj[[0, -1], 0], proj[[0, -1], 1], color=colors[[0, -1]], **_ANC2D)
-    if len(proj) > 2:
-        ax.scatter(proj[1:-1, 0], proj[1:-1, 1], color=colors[1:-1], **_HDL2D)
+def draw_ctrl_numbered_3d(ax, arr: np.ndarray, colors: np.ndarray,
+                           label_offset: float = 0.02) -> None:
+    """Poligono di controllo + punti colorati in base all'ordine, con numero
+    di sequenza accanto a ciascuno (versione 3D)."""
+    ax.plot(arr[:, 0], arr[:, 1], arr[:, 2], **_POLY)
+    ax.scatter(arr[[0, -1], 0], arr[[0, -1], 1], arr[[0, -1], 2],
+               color=colors[[0, -1]], **_ANC)
+    if len(arr) > 2:
+        ax.scatter(arr[1:-1, 0], arr[1:-1, 1], arr[1:-1, 2],
+                   color=colors[1:-1], **_HDL)
 
     # Numero di sequenza: 1 = punto iniziale, ..., n = punto finale
-    for i, (x, y) in enumerate(proj, start=1):
-        ax.annotate(
-            str(i), (x, y), textcoords="offset points", xytext=(7, 7),
+    for i, (x, y, z) in enumerate(arr, start=1):
+        ax.text(
+            x + label_offset, y + label_offset, z + label_offset, str(i),
             fontsize=9, fontweight='bold', color='black',
             bbox=dict(boxstyle='circle,pad=0.15', fc='white', ec='none', alpha=0.8),
-            zorder=7,
+            zorder=10,
         )
+
+
+def add_plane_projections(ax, curve_pts: np.ndarray, seg_colors: np.ndarray,
+                           ctrl_arr: np.ndarray, ctrl_colors: np.ndarray,
+                           xlim: tuple[float, float], ylim: tuple[float, float],
+                           zlim: tuple[float, float],
+                           alpha: float = 0.35, linewidth: float = 1.5,
+                           point_size: float = 22, degenerate_tol: float = 1e-9) -> None:
+    """Disegna l'ombra 2D della traiettoria (e dei punti di controllo) su
+    ciascuna delle tre pareti del box 3D (piano XY sul pavimento, XZ e YZ
+    sulle pareti), oltre alla curva vera e propria nello spazio.
+
+    Se su una parete la traiettoria collassa in un solo punto (es. un
+    segmento dritto allineato con l'asse perpendicolare a quella parete,
+    tipo un BURST1_X visto sul piano YZ), una Line3DCollection con segmenti a
+    lunghezza zero non disegnerebbe nulla: in quel caso viene disegnato un
+    marker al suo posto, cosi' il punto resta visibile.
+
+    I punti di controllo (ancore = cerchio, handle = diamante) vengono
+    proiettati sulle stesse tre pareti con lo stesso colore/alpha usati per
+    l'ombra della curva.
+    """
+    x, y, z = curve_pts[:, 0], curve_pts[:, 1], curve_pts[:, 2]
+    cx, cy, cz = ctrl_arr[:, 0], ctrl_arr[:, 1], ctrl_arr[:, 2]
+
+    shadow_colors = seg_colors.copy()
+    shadow_colors[:, 3] = alpha  # riduce l'opacita' mantenendo il gradiente colore
+
+    ctrl_shadow_colors = ctrl_colors.copy()
+    ctrl_shadow_colors[:, 3] = alpha  # stessa opacita' usata per l'ombra della curva
+
+    def draw_wall_line(xs: np.ndarray, ys: np.ndarray, zs: np.ndarray) -> None:
+        pts = np.column_stack([xs, ys, zs])
+        extent = pts.max(axis=0) - pts.min(axis=0)
+        if np.all(extent < degenerate_tol):
+            # Traiettoria degenere su questa parete -> un solo punto: uso un
+            # marker (colore a meta' gradiente, piu' opaco) invece della linea.
+            mid_color = seg_colors[len(seg_colors) // 2].copy()
+            mid_color[3] = min(1.0, alpha * 2.5)
+            ax.scatter([xs[0]], [ys[0]], [zs[0]], color=[mid_color],
+                       s=point_size, zorder=2, edgecolors='none')
+        else:
+            segs = np.stack([
+                np.column_stack([xs[:-1], ys[:-1], zs[:-1]]),
+                np.column_stack([xs[1:],  ys[1:],  zs[1:]]),
+            ], axis=1)
+            ax.add_collection3d(Line3DCollection(segs, colors=shadow_colors, linewidths=linewidth, zorder=1))
+
+    def draw_wall_points(xs: np.ndarray, ys: np.ndarray, zs: np.ndarray) -> None:
+        # Ancore (primo e ultimo punto di controllo) -> cerchio
+        anchors = [0, -1]
+        ax.scatter(xs[anchors], ys[anchors], zs[anchors],
+                   color=ctrl_shadow_colors[anchors], marker=_ANC['marker'],
+                   s=_ANC['s'], zorder=1, edgecolors='none')
+        # Handle (punti di controllo intermedi) -> diamante
+        if len(xs) > 2:
+            ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1],
+                       color=ctrl_shadow_colors[1:-1], marker=_HDL['marker'],
+                       s=_HDL['s'], zorder=1, edgecolors='none')
+
+    n, nc = len(x), len(cx)
+
+    # XY -> pavimento (z = z_min)
+    draw_wall_line(x, y, np.full(n, zlim[0]))
+    draw_wall_points(cx, cy, np.full(nc, zlim[0]))
+
+    # XZ -> parete di fondo (y = y_max)
+    draw_wall_line(x, np.full(n, ylim[1]), z)
+    draw_wall_points(cx, np.full(nc, ylim[1]), cz)
+
+    # YZ -> parete laterale (x = x_min)
+    draw_wall_line(np.full(n, xlim[0]), y, z)
+    draw_wall_points(np.full(nc, xlim[0]), cy, cz)
+
 
 def specularize_path(path: Path) -> Path:
     """
@@ -81,7 +199,7 @@ def specularize_path(path: Path) -> Path:
 
 def counter_clock_wise_rotation(path: Path) -> Path:
     """
-        Rotates the path counter-clockwise by 90 degrees across the xy plane
+        Rotates the path counter-clockwise by 90 degrees across the Z axis
     """
     resulting_path: Path = []
     for i in range(len(path)):
@@ -169,27 +287,164 @@ N:Path = [
 ]
 
 
-PATHS: dict[str, Path] = {
+# PATHS: dict[str, Path] = {
 
-    'Simple_Curve' : SIMPLE_CURVE,
-    'Simple_Curve_I': invert_order(SIMPLE_CURVE),
-    'Simple_Curve_CC': counter_clock_wise_rotation(SIMPLE_CURVE),
-    'Simple_Curve_DCC': counter_clock_wise_rotation(counter_clock_wise_rotation(SIMPLE_CURVE)),
-    'Simple_Curve_S': specularize_path(SIMPLE_CURVE),
-    'Deep_Simple_Curve': DEEP_SIMPLE_CURVE,
-    'Inward_Simple_Curve': INWARD_SIMPLE_CURVE,
-    'Spiral_Curve': specularize_path(SPIRAL_CURVE), # Mirrored for right-handed users
-    'Circle': CIRCLE,
-    'L': L,
-    'L_Reduced': L_REDUCED,
-    'N': N,
-    'S': [
-        (0, 0, 0),
-        (1, 0, 1),
-        (0, 1, 1),
-        (1, 1, 1)
+#     'Simple_Curve' : SIMPLE_CURVE,
+#     # 'Simple_Curve_I': invert_order(SIMPLE_CURVE),
+#     # 'Simple_Curve_CC': counter_clock_wise_rotation(SIMPLE_CURVE),
+#     # 'Simple_Curve_DCC': counter_clock_wise_rotation(counter_clock_wise_rotation(SIMPLE_CURVE)),
+#     'Simple_Curve_S': specularize_path(SIMPLE_CURVE),
+#     # 'Deep_Simple_Curve': DEEP_SIMPLE_CURVE,
+#     # 'Inward_Simple_Curve': INWARD_SIMPLE_CURVE,
+#     'Spiral_Curve': specularize_path(SPIRAL_CURVE), # Mirrored for right-handed users
+#     'Circle': CIRCLE,
+#     'L': L,
+#     'L_Reduced': L_REDUCED,
+#     'N': N,
+#     'S': [
+#         (0, 0, 0),
+#         (1, 0, 1),
+#         (0, 1, 1),
+#         (1, 1, 1)
+#     ]
+# }
+
+# ============================================================
+# BURST: Straight lines
+# ============================================================
+BURST_LENGTH: float = 0.5
+BURST: dict[str, Path] = {
+    'BURST1_X': [
+        (BURST_LENGTH / 2, 0.5, 0.5),
+        (1 - BURST_LENGTH / 2, 0.5, 0.5)
+    ],
+    'BURST2_Y': [
+        (0.5, BURST_LENGTH / 2, 0.5),
+        (0.5, 1 - BURST_LENGTH / 2, 0.5)
+    ],
+    'BURST3_Z': [
+        (0.5, 0.5, BURST_LENGTH / 2),
+        (0.5, 0.5, 1 - BURST_LENGTH / 2)
+    ],
+    'BURST4_XY': [
+        (BURST_LENGTH / 2, BURST_LENGTH / 2, 0.5),
+        (1 - BURST_LENGTH / 2, 1 - BURST_LENGTH / 2, 0.5)
+    ],
+    'BURST5_XZ': [
+        (BURST_LENGTH / 2, 0.5, BURST_LENGTH / 2),
+        (1 - BURST_LENGTH / 2, 0.5, 1 - BURST_LENGTH / 2)
+    ],
+    'BURST6_YZ': [
+        (0.5, BURST_LENGTH / 2, BURST_LENGTH / 2),
+        (0.5, 1 - BURST_LENGTH / 2, 1 - BURST_LENGTH / 2)
     ]
 }
+
+# ============================================================
+# CURVE: Semicircumference with diameter BURST_LENGTH
+# ============================================================
+CURVE_WEIGHT = 2
+CURVE_RADIUS = 0.25
+
+CURVE_XY:Path = [
+    (BURST_LENGTH / 2, CURVE_RADIUS, 0.5),
+    (0.5, 1 - CURVE_RADIUS, 0.5, CURVE_WEIGHT),
+    (1 - BURST_LENGTH / 2, CURVE_RADIUS, 0.5)
+]
+
+CURVE_XZ:Path = [
+    (BURST_LENGTH / 2, 0.5, CURVE_RADIUS),
+    (0.5, 0.5, 1 - CURVE_RADIUS, CURVE_WEIGHT),
+    (1 - BURST_LENGTH / 2, 0.5, CURVE_RADIUS)
+]
+
+CURVE_YZ:Path = [
+    (0.5, 1 - BURST_LENGTH / 2, CURVE_RADIUS),
+    (0.5, 0.5, 1 - CURVE_RADIUS, CURVE_WEIGHT),
+    (0.5, BURST_LENGTH / 2, CURVE_RADIUS)
+]
+
+SPIRAL_CURVE:Path = [
+    (0.2, 0.2, 0.5),
+    (0.8, 0.4, 0.5, 35),
+    (0.5, .8, 0.5, 45),
+    (0.25, .55, 0.5, 15),
+    (0.55, .4, 0.5, 1)
+]
+
+
+CURVE: dict[str, Path] = {
+    'CURVE1_XY': CURVE_XY,
+    'CURVE2_XZ': CURVE_XZ,
+    'CURVE3_YZ': CURVE_YZ,
+    'CURVE4_SPIRALXY': SPIRAL_CURVE,
+}
+
+
+# ============================================================
+# LETTER: Letters in 3D space
+# ============================================================
+LETTER_SIZE = 0.8
+L:Path = [
+    (0.3, 0.2, 0.5),
+    (0.7, 0.8, 0.5, 50),
+    (0.5, 1, 0.5, 100),
+    (0.3, 0.8, 0.5, 50),
+    (0.7, 0.2, 0.5),
+]
+
+N:Path = [
+    (0.2, 0.2, 0.2),
+    (0.3, 0.6, 0.6), 
+    (0.5, 0.2, 0.6),
+    (0.6, 0.6, 0.2),
+]
+
+S:Path = [
+    (1 - LETTER_SIZE, 1 - LETTER_SIZE, 1 - LETTER_SIZE),
+    (LETTER_SIZE, 1 - LETTER_SIZE, 1 - LETTER_SIZE),
+    (1 - LETTER_SIZE, LETTER_SIZE, LETTER_SIZE),
+    (LETTER_SIZE, LETTER_SIZE, LETTER_SIZE)
+]
+
+LETTER: dict[str, Path] = {
+    'LETTER_L': L,
+    'LETTER_N': N,
+    'LETTER_S': S,
+}
+# ============================================================
+# GEOMETRIC: Geometric shapes
+# ============================================================
+SPIRAL_LENGTH = .8
+SPIRAL_WIDTH = 0.3
+SPIRAL_WAYPOINTS = 5
+
+
+
+initial_angle = -math.pi
+SPIRAL_Y: Path = []
+for i in range(SPIRAL_WAYPOINTS):
+    angle = initial_angle + (i / (SPIRAL_WAYPOINTS - 1)) * 2 * math.pi
+    x = 0.5 + SPIRAL_WIDTH * math.cos(angle)
+    y = (i + 1) / (SPIRAL_WAYPOINTS) * SPIRAL_LENGTH + (1 - SPIRAL_LENGTH) / 2
+    z = 0.5 + SPIRAL_WIDTH * math.sin(angle)
+    SPIRAL_Y.append((x, y, z))
+
+
+
+GEOMETRIC: dict[str, Path] = {
+    'SPIRAL_Y': SPIRAL_Y,
+    'SPIRAL_X': counter_clock_wise_rotation(SPIRAL_Y)
+}
+
+PATHS: dict[str, Path] = {
+    **BURST,
+    **CURVE,
+    **LETTER,
+    **GEOMETRIC,
+    'SPIRAL_CURVE': SPIRAL_CURVE
+}
+
 
 CONTROL_RATIO = 100
 CONTROL_WEIGHT = 50
@@ -236,31 +491,51 @@ for name, path in PATHS.items():
     curve_pts = bezier_curve(bezier_points, point_weights)
     ctrl_arr  = np.array(bezier_points, dtype=float)
 
-    # Colore = quota Z (non piu' il "tempo"/ordine): stesso Z_NORM (0-1) per
-    # tutti i path, cosi' anche il colore resta confrontabile tra plot diversi.
-    seg_colors  = CMAP(Z_NORM(curve_pts[:-1, 2]))
-    ctrl_colors = CMAP(Z_NORM(ctrl_arr[:, 2]))
+    # Scambio Y/Z solo ai fini della visualizzazione (vedi SWAP_Y_Z sopra).
+    curve_pts = maybe_swap_yz(curve_pts)
+    ctrl_arr  = maybe_swap_yz(ctrl_arr)
 
-    c_xy = curve_pts[:, [0, 1]]
-    k_xy = ctrl_arr[:, [0, 1]]
-    segs_xy = np.stack([c_xy[:-1], c_xy[1:]], axis=1)
+    # Colore = ordine lungo il percorso (0 = waypoint 1 / rosso, 1 = waypoint
+    # N / blu). Per la curva uso il parametro t (gia' 0->1 lungo il
+    # tragitto); per i punti di controllo uso l'indice di sequenza
+    # normalizzato. Stesso ORDER_NORM (0-1) per tutti i path, cosi' anche il
+    # colore resta confrontabile tra plot diversi.
+    t_curve = np.linspace(0.0, 1.0, len(curve_pts))
+    order_ctrl = np.linspace(0.0, 1.0, len(ctrl_arr))
+
+    seg_colors  = CMAP(ORDER_NORM(t_curve[:-1]))
+    ctrl_colors = CMAP(ORDER_NORM(order_ctrl))
 
     xlim = (NORM_MIN - NORM_MARGIN, NORM_MAX + NORM_MARGIN)
     ylim = (NORM_MIN - NORM_MARGIN, NORM_MAX + NORM_MARGIN)
+    zlim = (NORM_MIN - NORM_MARGIN, NORM_MAX + NORM_MARGIN)
+    if SWAP_Y_Z:
+        ylim, zlim = zlim, ylim  # per ora identici, ma corretto se in futuro NORM_MIN/MAX differissero per asse
 
-    # ---------- Front view (XY), unico plot ----------
-    fig, ax = plt.subplots(figsize=(7, 7))
-    ax.add_collection(LineCollection(segs_xy, colors=seg_colors, linewidths=2))
-    draw_ctrl_numbered(ax, k_xy, ctrl_colors)
-    ax.set(xlabel='X', ylabel='Y', title=f'{name}')
-    ax.set_xlim(xlim); ax.set_ylim(ylim)
-    ax.set_aspect('equal', adjustable='box')
-    ax.grid(True, linestyle='--', alpha=0.45)
+    # ---------- Plot 3D con proiezioni sui tre piani ----------
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
 
-    sm = plt.cm.ScalarMappable(cmap=CMAP, norm=Z_NORM)
+    segs_xyz = np.stack([curve_pts[:-1], curve_pts[1:]], axis=1)
+    ax.add_collection3d(Line3DCollection(segs_xyz, colors=seg_colors, linewidths=2.2, zorder=6))
+    draw_ctrl_numbered_3d(ax, ctrl_arr, ctrl_colors)
+    add_plane_projections(ax, curve_pts, seg_colors, ctrl_arr, ctrl_colors, xlim, ylim, zlim)
+
+    ax.set(xlabel='X', ylabel=('Z' if SWAP_Y_Z else 'Y'),
+           zlabel=('Y' if SWAP_Y_Z else 'Z'), title=f'{name}')
+    ax.set_xlim(xlim); ax.set_ylim(ylim); ax.set_zlim(zlim)
+    ax.set_box_aspect((1, 1, 1))
+    ax.grid(True, linestyle='--', alpha=0.35)
+    ax.view_init(elev=VIEW_PITCH, azim=VIEW_YAW, roll=VIEW_ROLL)
+    if INVERT_Y_AXIS:
+        ax.invert_yaxis()
+    if INVERT_Z_AXIS:
+        ax.invert_zaxis()
+
+    sm = plt.cm.ScalarMappable(cmap=CMAP, norm=ORDER_NORM)
     sm.set_array([])
-    cbar = fig.colorbar(sm, ax=ax, shrink=0.8, pad=0.03)
-    cbar.set_label('Z')
+    # cbar = fig.colorbar(sm, ax=ax, shrink=0.7, pad=0.08)
+    # cbar.set_label('Ordine (1 -> N)')
 
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_FOLDER, f'{name}.png'), dpi=300, bbox_inches='tight')
