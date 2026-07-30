@@ -90,6 +90,26 @@
 	pdfauthor={Davide D'Acunto}
 }
 
+\newenvironment{protocol}
+{%
+  \begin{minipage}{\textwidth}
+  \begin{list}{}{%
+    \setlength{\leftmargin}{0cm}%
+    \setlength{\rightmargin}{0.8cm}%
+    \setlength{\listparindent}{0pt}%
+    \setlength{\itemindent}{0pt}%
+  }
+  \item\relax
+  \begin{spacing}{0.9}
+  \ttfamily\small
+  \ignorespaces
+}
+{%
+  \end{spacing}
+  \end{list}
+  \end{minipage}
+}
+
 \begin{document}
 
 \numberwithin{figure}{chapter}
@@ -217,21 +237,6 @@ In the data collection mechanism, the system must interface itself with a human 
 Rather than giving the raw data to a neural network, which would slow down the learning process by increasing its complexity, the data is processed to extract more meaningful information, which will speed up the learning process and make it more efficient. So, by the combination of a theoretical model and data-driven techniques, a bio-inspired generative model can be developed.
 
 The generated movements can then be executed on the same system that collected the original data, allowing for a "hand to hand" comparison between the original and generated movements, through the dyadic interaction between the human subject and the system.
-\section{System Design}
-\hypertarget{TODOELEMENT9}
-Before delving into the details of the solution adopted, it is necessary to provide a high-level overview of the system design. 
-\subsection{Haptic Device}
-The device adopted for the problem is \textit{Touch}, from \textit{3D Systems}. It is a haptic device with six degrees of freedom, allowing it to move in three-dimensional space and rotate around three axes. It is equipped with a stylus that can be held by the user, allowing them to interact with the device. The device is able to produce some linear forces, which are applied to the user's hand through the stylus. 
-
-This kind of devices is commonly used in teleoperation, where the user can control a remote robot by moving the stylus and feeling the forces applied by the robot. In this case the device is used to collect data from the user's movements. 
-\subsection{Haptic Interface Software}
-The haptic interface software manages both the user interface of the haptic device and the communication with the robot.
-
-From the side of the experimenter, the software component allows them to control the experiment execution, by selecting its configurations, like the path to show, the number of repetitions, the sampling frequency, and so on.
-
-From the side of the human subject, the software component interfaces with them through a simulated environment that projects the position of the haptic device inside a virtual space. In this space, the path is represented as an ordered sequence of spheres, while the device is represented as a sphere that can be moved by the user through their interaction with the device.
-
-The software component aids the user in following the path by providing them with visual and haptic feedback. The visual feedback is given by changing the color of the spheres that represent the path, while the haptic feedback is given by applying forces to the device that guide the user towards the path. Though, since this would poison the data, the visual and haptic feedback is disabled during the data collection phase. This is because the goal of the experiment is to collect data that reflects the user's natural movements, without any external influence, while taking into account the fact that the user is aware of the path they are supposed to follow. Nonetheless, the more accurate the user is in following the path, the more accurate the collected data will be, and thus the more accurate the generative model will be. Although, this goes in pair with the number of repetitions, paths and waypoints. This is a trade-off between the accuracy of the data, the naturalness of the user's movements and the possible sample poisoning by their fatigue. 
 
 \section{Task Design}
 The goal of the experiments is relatively simple: collect a dataset of rapid and natural human movements. However, in order to obtain a dataset of sort, it is mandatory to provide the same task to each subject. Nonetheless, the same input must be grasped equally by different subjects. Thus, the deletion of ambiguity in task definition is imperative.
@@ -266,25 +271,27 @@ An idea to make this aspect stand out from the collected data could be the intro
 
 \subsection{Path Taxonomy}
 \hypertarget{TODOELEMENT1}
-The paths that will be shown to the subject during the experiment are grouped into the following categories: \begin{itemize}
+The paths that will be shown to the subject during the experiment are grouped into the following categories: 
+\begin{itemize}
     \item Burst: impulsive movements. Simple paths that help the subject getting used to the haptic device. 
     \begin{itemize}
         \item Straight line over the $XY, YZ$ or $XZ$ planes
-        \item Semicircumference over the $XY, YZ$ or $XZ$ planes, with different arc lengths
+        \item Semicircumference over the $XY, YZ$ or $XZ$ planes
     \end{itemize}
     \item Geometric: two- and three-dimensional round geometric shapes
     \begin{itemize}
-        \item Spiral, growing over the $X$ or $Y$ axes
+        \item Helix, growing over the $X$ or $Y$ axes
+        \item Spiral, in the $XY$ plane
         \item Ellipses, one in the $XY$ plane and the other in the $XZ$ plane
         \item Circle, one in the $XY$ plane and the other in the $XZ$ plane
     \end{itemize}
     \item Symbol: letters of an alphabet
     \begin{itemize}
-        \item Cursive lowercase L $\left(\ell\right)$ in 
-        \item Print uppercase S in an oblique plane
-        \item Cursive Greek Phi $\left(\varphi\right)$
+        \item Cursive lowercase L $\left(\ell\right)$ in both the $XY$ and $XZ$ planes
+        \item Print uppercase S in an oblique plane in both senses
+        \item Cursive Greek Phi $\left(\varphi\right)$ in the $XY$ plane
+        \item Print uppercase $N$ which segments differ in plane 
     \end{itemize}
-    \item Complex: unpredictable 
 \end{itemize}
 
 \section{Session Design}
@@ -302,8 +309,7 @@ The real challenge is to design the experiments in such a way that there isn't d
 
 % In this scenario, the users interact with a system that shows them an ordered sequence of waypoints in the space, namely a path, and they are asked to follow them with their hand. As they move, the system collects the trajectory of their movements, expressed as an ordered sequence of timestamped points with respect to a reference frame. For convenience, the reference frame is assumed to be the robot's base frame, and the points are expressed in Cartesian coordinates, each sampled at a fixed frequency.
 \subparagraph{Parameters}
-\hypertarget{TODOELEMENT2}
-The \hypertarget{TODOELEMENT6} session does have various parameters that need to be tuned in a trade-off between the accuracy of the collected data, their naturalness, the fatigue of the user, the length of the experiment and the amount of data collected. The parameters that can be tuned are:
+The session does have various parameters that need to be tuned in a trade-off between the accuracy of the collected data, their naturalness, the fatigue of the user, the length of the experiment and the amount of data collected. The parameters that can be tuned are:
 
 \begin{itemize}
 
@@ -319,10 +325,35 @@ The \hypertarget{TODOELEMENT6} session does have various parameters that need to
 \subsection{Written Protocol}
 \hypertarget{TODOELEMENT3}
 Providing the user with a written protocol is mandatory not only to ensure that all the user have the same information, but also to ensure that they have the same understanding of the task. From the different equivalent sequences of words available to explain an instruction, the most intuitive should be chosen, to avoid any bias in the collected data. 
-\subparagraph{Input}\hypertarget{TODOELEMENT7a} In each experiment of a session a path is shown to the user, their goal is to follow it as accurately as possible, with the understanding that it's not strictly necessary to cross all the waypoints, but rather to think of them as attractors. They will first be pre-trained to follow the path with the aid of visual and haptic feedback, until they reach a certain level of proficiency, defined by the experimenter, and then they will be asked to follow the path without any aid, while the system collects their movements.
+\subparagraph{Input}\hypertarget{TODOELEMENT7a} In each experiment of a session a path is shown to the user, their goal is to traverse close to the waypoint as fast as possible, with the understanding that it's not strictly necessary to cross all the waypoints, but rather to think of them as attractors. They will first be pre-trained to follow the path with the aid of visual and haptic feedback, until they reach a certain level of proficiency, defined by the experimenter, and then they will be asked to follow the path without any aid, while the system collects their movements.
 \subparagraph{Result}
 \hypertarget{TODOELEMENT7}
-For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy.
+For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy. Other information like the user's hand orientation and the angular twist velocity are collected as well, but they are not needed for the generative model, since they are not used to generate new movements. They are collected to provide a more complete representation of the user's movements, and to eventually allow for a more detailed analysis of the data.
+
+\begin{protocol}
+... Welcome ... What's your dominant hand? (If no preference is expressed, pick left hand when possible). (Prepare the environment on the subject choice).
+
+The device to your (left/right) side is a haptic device, which is connected to the screen in front of you (the screen shows an empty environment). In the screen, you can observe the effects that manipulating the device has on the environment.
+
+Please extract the device from its housing and handle it as if it was a pen or a precision tool. Feel free to explore the environment in the simulation. Try to exit from it: you will feel forces that will prevent you from leaving it. Those are the limits within you can freely move. There are two buttons on the pen: the darker one lets you rotate the environment, the lighter one to zoom. [mouse]
+
+(Once the subject learnt how to use it). Now, the screen will show you some colored spheres (inside other transparent spheres?). Try to make a smooth, fluid and natural movement that crosses all the spheres. The order in which the movement must cross the spheres is given by their number. 
+
+Initially, when you try to cross the spheres, the device will help you reach them by pulling you towards their center. After a while, the device will let you traverse to the next sphere, with a slight pulling force.
+
+After a fixed amount of repetitions, the screen won’t show any information, and only the haptic feedback will be left, which pulling force will decrease execution by execution.
+
+After a fixed amount of repetitions, the pulling force will decrease to zero (it must dynamically adjust itself by studying the subject accuracy), from there you will be in the recording phase.
+
+(Should the user be told when they're in the recording phase?)
+
+Every time you want to be placed to the start position and/or reset the execution, just press the dark button. Now please, try to cross the spheres with the aid of the device.
+
+[steps: (sight + haptic feedback), (haptic feedback), (no info)]
+
+(When the pre training phase ends) Congrats. Now, proceed to repeat the same movement you've done before, without the screen information (or with only the points visible?) as accurately as possible. If you feel you're off track, don't fix the movement and try again, since it would be discarded anyways. (In order to help you, the device will automatically place itself in the starting position when you press the lighter button. A brief vibration will tell you when to start the movement. If during the movement you feel the same vibration, then you have to redo it again?)
+\end{protocol}
+
 
 \hypertarget{TODOELEMENT7b}
 Those are the same inputs and outputs of the generative model, with the exception that it won't follow the same policies, but only understand the underlying principles from the dataset.
@@ -343,26 +374,52 @@ Those are the same inputs and outputs of the generative model, with the exceptio
 % \begin{equation}
 %     L_{i} = 
 % \end{equation}
-\section{Data Processing Software}
+\section{System Design}
+\hypertarget{TODOELEMENT9}
+Before delving into the details of the solution adopted, it is necessary to provide a high-level overview of the system design. 
+\subsection{Haptic Device}
+The device adopted for the problem is \textit{Touch}, from \textit{3D Systems}. It is a haptic device with six degrees of freedom, allowing it to move in three-dimensional space and rotate around three axes. It is equipped with a stylus that can be held by the user, allowing them to interact with the device. The device is able to produce some linear forces, which are applied to the user's hand through the stylus. 
+
+This kind of devices is commonly used in teleoperation, where the user can control a remote robot by moving the stylus and feeling the forces applied by the robot. In this case the device is used to collect data from the user's movements. 
+\subsection{Haptic Interface Software}
+The haptic interface software manages both the user interface of the haptic device and the communication with the robot.
+
+From the side of the experimenter, the software component allows them to control the experiment execution, by selecting its configurations, like the path to show, the number of repetitions, the sampling frequency, and so on.
+
+From the side of the human subject, the software component interfaces with them through a simulated environment that projects the position of the haptic device inside a virtual space. In this space, the path is represented as an ordered sequence of spheres, while the device is represented as a sphere that can be moved by the user through their interaction with the device.
+
+\paragraph{\texttt{ROS2} Controller}
+The haptic device controller is responsible of managing the communication between experiment, haptic device and subject through sending commands and receiving data, and of the experiment execution. 
+
+The controller takes as input the configuration of the experiment, which includes the path to show, the number of repetitions, the size of the waypoints, the forces to apply and so on. From these information, during the execution it is able to communicate with the experiment through the keyboard, and with the haptic device through its command and state interfaces. The controller is also responsible for collecting the data from the haptic device, which includes the position, orientation, linear and angular velocities.
+
+Furthermore, it is responsible of communicating with the subject through the screen via  the visualization of the path during the pre-training phase. In this case, the role of the controller is to communicate a series of colored waypoints, and the current position of the haptic device to the visualization software \texttt{RViz2}, which is responsible for rendering the scene on the screen. The controller applies the haptic feedback to the user, by computing the forces to apply to the haptic device based on the current position of the device and the position of the next waypoint, multiplied of a gain factor and the distance between the two.
+% The software component aids the user in following the path by providing them with visual and haptic feedback. The former is given through the visualization of a colored sequence of spheres, in which the color indicates the progress along the path. The latter is given by applying attractive forces towards the next waypoint. Though, since these feedbacks would poison the data, they are disabled during the collection phase. This is because the goal of the experiment is to collect data that reflects the user's natural movements, without any external influence, while taking into account the user awareness of the path to follow. Nonetheless, the more accurate the user is in following the path, the more accurate the collected data will be, and thus the more accurate the generative model will be. Although, this goes in pair with the number of repetitions, paths and waypoints. This is a trade-off between the accuracy of the data, the naturalness of the user's movements and the possible sample poisoning by their fatigue.
+
+
+\subsection{Data Processing Software}
 The data processing software is responsible for analyzing the collected dataset of human movements and extracting meaningful information that can be used to train a generative model, instead of giving the raw data to the model, which would slow down the learning process by increasing its complexity.
 
-\subsection{Temporal Characterization}
+\paragraph{Temporal Characterization}
 \hypertarget{TODOELEMENT8}
 In particular, the crucial information that can be extracted from the dataset is the lognormal parameters of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones. 
 
 In literature there are already some software components that can extract the lognormal parameters from human movements, such as the \textit{idelog3d} software. Once this software is applied to the dataset, it will output a new dataset that contains the parameters of each rapid movement across two waypoints, which can be learned by the generative model. Once trained, the model can provide the velocity profile of a new movement across two waypoints through the application of the lognormal parameters.
 
-\subsection{Spatial Characterization}
+\paragraph{Spatial Characterization}
 Regarding the spatial characterization of the movements, it would be handy to develop a software able to characterize the spatial properties of the movements, such as the starting and ending points, the curvature, the length and so on. In other words, the software should be able to extract the spatial properties of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones.
+
+A possible interpretation of the spatial properties of a movement is to consider it as a Bézier curve, actually a weighted spline Bézier curve, which is defined by a set of control points to which the curve is attracted. The control points are not necessarily the waypoints, while the weights are the parameters that define the attraction of the curve to the control points. The generative model could come with a set of control points(and eventually weights) that define the shape of the curve. In this case, the difference between waypoints and control points is that the former are the points that the model is supposed to reach, while the latter are the points to which the model's curve is attracted to.
 
 For instance, one possible spatial representation is the spline Bézier curve, which comes in handy since it doesn't always reach the target points, rather it tries to get as close as possible to them, which is what humans do when they move. The Bézier curve is defined by a set of control points, which can be used to define the shape of the curve. In order to teach a generative model to draw such lines, it is necessary to extract them from the actual path samples draw from the subjects movements.
 % This software component should be able to provide the generative model with properties that are independent of the time characterization and explained by the scientific literature.
 
-\section{Generative Model}
+\subsection{Generative Model}
 The generative model is trained with the dataset of movements, extended with the temporal and spatial characterizations, to learn the underlying principles of human motion. Once trained, the model can generate new movements that are similar to the original ones, by providing the path in the space and its time characterization through a velocity profile derived from the lognormal parameters. The generated movements can then be executed on the same system that collected the original data.
 \chapter{Experimental Validation}
 \section{Experimental Setup}
-Regarding the aforementioned experimental parameters, the following values have been chosen: 
+Regarding \hypertarget{TODOELEMENT2} the aforementioned experimental parameters, the following values have been chosen: 
+
 \begin{table}[h!]
     \centering
     \begin{tabular}{|ccc|}
@@ -370,17 +427,16 @@ Regarding the aforementioned experimental parameters, the following values have 
     \textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
     \hline
     \hline
-    $W_s$ & Waypoint size & 0.02 m \\
-    $P_l$ & Path length & 2-5 waypoints \\
+    $W_s$ & Waypoint diameter & 0.05 m \\
+    $P_l$ & Path length & 2-7 waypoints \\
     $P_r$ & Path repetitions & 20 repetitions \\
     $N_P$ & Number of paths & 20 paths \\
     $R_t$ & Rest time & 60s \\
     $R_f$ & Rest frequency & $1/6$ \\
     \hline
-    \end{tabular}
+\end{tabular}
 \end{table}
-As explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
-
+As \hypertarget{TODOELEMENT6} explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
 \section{Experimental Data}
 Through the executions of the experiments, the system collects a dataset of human movements, expressed as a sequence of timestamped points in the space, with respect to the reference frame. 
 
@@ -388,7 +444,6 @@ Through the executions of the experiments, the system collects a dataset of huma
 \section{Results}
 
 \section{Statistical Significance}
-
 \chapter{Conclusion}
 Write the conclusion here.
 \printbibliography

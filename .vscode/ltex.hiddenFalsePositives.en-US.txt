@@ -1,1 +1,0 @@
-{"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Qgives us a new perspective on the nature of human mind, and proceeds to develop a robot that can learns like a human, called Darwin..\\E$"}

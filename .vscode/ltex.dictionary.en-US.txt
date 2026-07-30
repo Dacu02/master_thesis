@@ -1,4 +1,2 @@
-ichor
-Talos
-Loew
-positronic
+Geomagic
+Semicircumference

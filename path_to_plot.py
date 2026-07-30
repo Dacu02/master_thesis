@@ -213,7 +213,7 @@ def invert_order(path: Path) -> Path:
     """
         Inverts the order of the path
     """
-    resulting_path:Path = []
+    resulting_path: Path = []
     resulting_path.append((path[len(path)-1][0], path[len(path)-1][1], path[len(path)-1][2]))
     for i in range(len(path)-2, -1, -1):
         if len(path[i]) == 4:
@@ -226,26 +226,26 @@ def invert_order(path: Path) -> Path:
 # Input
 # ============================================================
 
-SIMPLE_CURVE:Path = [
+SIMPLE_CURVE: Path = [
     (0.25, 0, 0),
     (0.75, 0.25, .5, 5),
     (1, 1, .5, 1)
 ]
 
-DEEP_SIMPLE_CURVE:Path = [
+DEEP_SIMPLE_CURVE: Path = [
     (0.5, 0, 0),
     (0.75, 0.125, .5, 5),
     (0.75, .25, 1, 1)
 ]
 
-INWARD_SIMPLE_CURVE:Path = [
+INWARD_SIMPLE_CURVE: Path = [
     (0.5, 0, 0),
     (0.35, 0.33, 0.0, 5),
     (0.75, 0.66, 0.5, 5),
     (0.75, 1, 0.5, 1)
 ]
 
-SPIRAL_CURVE:Path = [
+SPIRAL_CURVE: Path = [
     (0.2, 0.2, 0.5),
     (0.8, 0.4, 0.5, 35),
     (0.5, .8, 0.5, 45),
@@ -253,7 +253,7 @@ SPIRAL_CURVE:Path = [
     (0.55, .4, 0.5, 1)
 ]
 
-CIRCLE:Path = [
+CIRCLE: Path = [
     (0.425, 0.2, 0.5),
     (0.7, 0.5, 0.5, 80),
     (0.4, 0.8, 0.5, 250),
@@ -261,7 +261,7 @@ CIRCLE:Path = [
     (0.375, 0.2, 0.5),
 ]
 
-L:Path = [
+L: Path = [
     (0.3, 0.2, 0.5),
     (0.525, 0.4, 0.5, 100),
     (0.7, 0.8, 0.5, 1000),
@@ -271,7 +271,7 @@ L:Path = [
     (0.7, 0.2, 0.5),
 ]
 
-L_REDUCED:Path = [
+L_REDUCED: Path = [
     (0.3, 0.2, 0.5),
     (0.7, 0.8, 0.5, 50),
     (0.5, 1, 0.5, 100),
@@ -279,7 +279,7 @@ L_REDUCED:Path = [
     (0.7, 0.2, 0.5),
 ]
 
-N:Path = [
+N: Path = [
     (0.2, 0.2, 0.2),
     (0.3, 0.6, 0.6), 
     (0.5, 0.2, 0.6),
@@ -309,83 +309,62 @@ N:Path = [
 #     ]
 # }
 
-# ============================================================
-# BURST: Straight lines
-# ============================================================
-BURST_LENGTH: float = 0.5
+PATHS_LENGTH: float = 0.8
+PATH_CENTER:  float = 0.5
+#============================================================
+# BURST: Short movements
+#============================================================
+BURST_LENGTH: float = PATHS_LENGTH
+CURVE_RADIUS: float = 0.9
+CURVE_WEIGHT: float = 2
 BURST: dict[str, Path] = {
-    'BURST1_X': [
-        (BURST_LENGTH / 2, 0.5, 0.5),
-        (1 - BURST_LENGTH / 2, 0.5, 0.5)
+    'BURST1_XY': [
+        (1 - BURST_LENGTH, 1 - BURST_LENGTH, PATH_CENTER),
+        (BURST_LENGTH, BURST_LENGTH, PATH_CENTER)
     ],
-    'BURST2_Y': [
-        (0.5, BURST_LENGTH / 2, 0.5),
-        (0.5, 1 - BURST_LENGTH / 2, 0.5)
+    'BURST2_XZ': [
+        (1 - BURST_LENGTH, PATH_CENTER, 1 - BURST_LENGTH),
+        (BURST_LENGTH, PATH_CENTER, BURST_LENGTH)
     ],
-    'BURST3_Z': [
-        (0.5, 0.5, BURST_LENGTH / 2),
-        (0.5, 0.5, 1 - BURST_LENGTH / 2)
+    'BURST3_YZ': [
+        (PATH_CENTER, 1 - BURST_LENGTH, 1 - BURST_LENGTH),
+        (PATH_CENTER, BURST_LENGTH, BURST_LENGTH)
     ],
     'BURST4_XY': [
-        (BURST_LENGTH / 2, BURST_LENGTH / 2, 0.5),
-        (1 - BURST_LENGTH / 2, 1 - BURST_LENGTH / 2, 0.5)
+        (1 - CURVE_RADIUS, 1 - BURST_LENGTH, PATH_CENTER),
+        (CURVE_RADIUS, 0.5, PATH_CENTER, CURVE_WEIGHT),
+        (1- CURVE_RADIUS, BURST_LENGTH, PATH_CENTER)
     ],
     'BURST5_XZ': [
-        (BURST_LENGTH / 2, 0.5, BURST_LENGTH / 2),
-        (1 - BURST_LENGTH / 2, 0.5, 1 - BURST_LENGTH / 2)
+        (1 - BURST_LENGTH, PATH_CENTER, 1 - CURVE_RADIUS),
+        (PATH_CENTER, PATH_CENTER, CURVE_RADIUS, CURVE_WEIGHT),
+        (BURST_LENGTH, PATH_CENTER, 1 - CURVE_RADIUS)
     ],
     'BURST6_YZ': [
-        (0.5, BURST_LENGTH / 2, BURST_LENGTH / 2),
-        (0.5, 1 - BURST_LENGTH / 2, 1 - BURST_LENGTH / 2)
-    ]
+        (PATH_CENTER, 1 - CURVE_RADIUS, 1 - BURST_LENGTH),
+        (PATH_CENTER, CURVE_RADIUS, PATH_CENTER, CURVE_WEIGHT),
+        (PATH_CENTER, 1 - CURVE_RADIUS, BURST_LENGTH)
+    ],
 }
 
 # ============================================================
 # CURVE: Semicircumference with diameter BURST_LENGTH
 # ============================================================
-CURVE_WEIGHT = 2
-CURVE_RADIUS = 0.25
-
-CURVE_XY:Path = [
-    (BURST_LENGTH / 2, CURVE_RADIUS, 0.5),
-    (0.5, 1 - CURVE_RADIUS, 0.5, CURVE_WEIGHT),
-    (1 - BURST_LENGTH / 2, CURVE_RADIUS, 0.5)
-]
-
-CURVE_XZ:Path = [
-    (BURST_LENGTH / 2, 0.5, CURVE_RADIUS),
-    (0.5, 0.5, 1 - CURVE_RADIUS, CURVE_WEIGHT),
-    (1 - BURST_LENGTH / 2, 0.5, CURVE_RADIUS)
-]
-
-CURVE_YZ:Path = [
-    (0.5, 1 - BURST_LENGTH / 2, CURVE_RADIUS),
-    (0.5, 0.5, 1 - CURVE_RADIUS, CURVE_WEIGHT),
-    (0.5, BURST_LENGTH / 2, CURVE_RADIUS)
-]
-
-SPIRAL_CURVE:Path = [
-    (0.2, 0.2, 0.5),
-    (0.8, 0.4, 0.5, 35),
-    (0.5, .8, 0.5, 45),
-    (0.25, .55, 0.5, 15),
-    (0.55, .4, 0.5, 1)
-]
 
 
-CURVE: dict[str, Path] = {
-    'CURVE1_XY': CURVE_XY,
-    'CURVE2_XZ': CURVE_XZ,
-    'CURVE3_YZ': CURVE_YZ,
-    'CURVE4_SPIRALXY': SPIRAL_CURVE,
-}
+# CURVE: dict[str, Path] = {
+#     'CURVE1_XY': CURVE_XY,
+#     'CURVE2_XZ': CURVE_XZ,
+#     'CURVE3_YZ': CURVE_YZ,
+#     'CURVE4_SPIRALXY': SPIRAL_CURVE,
+# }
 
 
 # ============================================================
 # LETTER: Letters in 3D space
 # ============================================================
 LETTER_SIZE = 0.8
-L:Path = [
+L: Path = [
     (0.3, 0.2, 0.5),
     (0.7, 0.8, 0.5, 50),
     (0.5, 1, 0.5, 100),
@@ -393,24 +372,35 @@ L:Path = [
     (0.7, 0.2, 0.5),
 ]
 
-N:Path = [
+N: Path = [
     (0.2, 0.2, 0.2),
     (0.3, 0.6, 0.6), 
     (0.5, 0.2, 0.6),
     (0.6, 0.6, 0.2),
 ]
 
-S:Path = [
+S: Path = [
     (1 - LETTER_SIZE, 1 - LETTER_SIZE, 1 - LETTER_SIZE),
     (LETTER_SIZE, 1 - LETTER_SIZE, 1 - LETTER_SIZE),
     (1 - LETTER_SIZE, LETTER_SIZE, LETTER_SIZE),
     (LETTER_SIZE, LETTER_SIZE, LETTER_SIZE)
 ]
 
+PHI_WIDTH = 0.25
+PHI: Path = [
+    (PATH_CENTER - PHI_WIDTH, PATH_CENTER, PATH_CENTER),
+    (PATH_CENTER, PATH_CENTER - PHI_WIDTH, PATH_CENTER, 30),
+    (PATH_CENTER + PHI_WIDTH, PATH_CENTER, PATH_CENTER, 250),
+    (PATH_CENTER, PATH_CENTER + PHI_WIDTH, PATH_CENTER, 500),
+    (PATH_CENTER, PATH_CENTER, PATH_CENTER, 1000),
+    (PATH_CENTER, PATH_CENTER, PATH_CENTER - PHI_WIDTH, 200),
+]
+
 LETTER: dict[str, Path] = {
-    'LETTER_L': L,
-    'LETTER_N': N,
-    'LETTER_S': S,
+    'LETTER1_L': L,
+    'LETTER2_PHI': PHI,
+    'LETTER3_S': S,
+    'LETTER4_N': N,
 }
 # ============================================================
 # GEOMETRIC: Geometric shapes
@@ -431,18 +421,68 @@ for i in range(SPIRAL_WAYPOINTS):
     SPIRAL_Y.append((x, y, z))
 
 
+SPIRAL_CURVE: Path = [
+    (0.2, 0.2, PATH_CENTER),
+    (0.8, 0.4, PATH_CENTER, 35),
+    (0.5, .8, PATH_CENTER, 45),
+    (0.25, .55, PATH_CENTER, 15),
+    (0.55, .4, PATH_CENTER, 1)
+]
+
+OFFSET = 0.01
+CIRCLE_RADIUS = 0.33
+
+CIRCLE_XY = [
+    (PATH_CENTER + OFFSET, PATH_CENTER - CIRCLE_RADIUS, PATH_CENTER),
+    (PATH_CENTER + CIRCLE_RADIUS, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER, PATH_CENTER + CIRCLE_RADIUS, PATH_CENTER, 300),
+    (PATH_CENTER - CIRCLE_RADIUS, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER - OFFSET, PATH_CENTER - CIRCLE_RADIUS, PATH_CENTER),
+]
+
+CIRCLE_ZX = [
+    (PATH_CENTER + OFFSET, PATH_CENTER, PATH_CENTER - CIRCLE_RADIUS),
+    (PATH_CENTER + CIRCLE_RADIUS, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER, PATH_CENTER, PATH_CENTER + CIRCLE_RADIUS, 300),
+    (PATH_CENTER - CIRCLE_RADIUS, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER - OFFSET, PATH_CENTER, PATH_CENTER - CIRCLE_RADIUS),
+]
+
+ELLIPSE_XY_RADIUS_X = 0.4
+ELLIPSE_XY_RADIUS_Y = 0.15
+ELLIPSE_XY = [
+    (PATH_CENTER + OFFSET, PATH_CENTER - ELLIPSE_XY_RADIUS_Y, PATH_CENTER),
+    (PATH_CENTER + ELLIPSE_XY_RADIUS_X, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER, PATH_CENTER + ELLIPSE_XY_RADIUS_Y, PATH_CENTER, 300),
+    (PATH_CENTER - ELLIPSE_XY_RADIUS_X, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER - OFFSET, PATH_CENTER - ELLIPSE_XY_RADIUS_Y, PATH_CENTER),
+]
+
+ELLIPSE_XZ_RADIUS_X = 0.1
+ELLIPSE_XZ_RADIUS_Z = 0.45
+ELLIPSE_XZ = [
+    (PATH_CENTER + OFFSET, PATH_CENTER, PATH_CENTER - ELLIPSE_XZ_RADIUS_Z),
+    (PATH_CENTER + ELLIPSE_XZ_RADIUS_X, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER, PATH_CENTER, PATH_CENTER + ELLIPSE_XZ_RADIUS_Z, 300),
+    (PATH_CENTER - ELLIPSE_XZ_RADIUS_X, PATH_CENTER, PATH_CENTER, 100),
+    (PATH_CENTER - OFFSET, PATH_CENTER,PATH_CENTER - ELLIPSE_XZ_RADIUS_Z),
+]
 
 GEOMETRIC: dict[str, Path] = {
-    'SPIRAL_Y': SPIRAL_Y,
-    'SPIRAL_X': counter_clock_wise_rotation(SPIRAL_Y)
+    'GEOMETRIC1_SPIRAL_3DY': SPIRAL_Y,
+    'GEOMETRIC2_SPIRAL_3DX': counter_clock_wise_rotation(SPIRAL_Y),
+    'GEOMETRIC3_SPIRAL_XY': SPIRAL_CURVE,
+    'GEOMETRIC4_CIRCLE_XY': CIRCLE_XY,
+    'GEOMETRIC5_CIRCLE_ZX': CIRCLE_ZX,
+    'GEOMETRIC6_ELLIPSE_XY': ELLIPSE_XY,
+    'GEOMETRIC7_ELLIPSE_XZ': ELLIPSE_XZ,
 }
 
 PATHS: dict[str, Path] = {
     **BURST,
-    **CURVE,
-    **LETTER,
+    # **CURVE,
     **GEOMETRIC,
-    'SPIRAL_CURVE': SPIRAL_CURVE
+    **LETTER,
 }
 
 
