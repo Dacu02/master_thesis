@@ -134,7 +134,7 @@
     \huge Master Thesis in Natural Computation 
 
     \vspace{0.5cm}
-    \textbf{\huge Bio-inspired learning for motion planning of collaborative robots}
+    \textbf{\huge A lognormal based framework for human motion analysis - generation in 3D spaces}
 
     \vspace{0.5cm}
 
@@ -168,22 +168,6 @@
 \epigraph{The true measure of a man is not his intelligence or how high he rises in this freak establishment. No, the true measure of a man is this: how quickly can he respond to the needs of others and how much of himself he can give.}{\textit{Philip K. Dick, Our Friends}}
 \vfill
 \blankpage
-\chapter*{TODO}
-Restructure the document, according to the following outline:
-\begin{itemize}
-    \item \hyperlink{TODOELEMENT1}{How many paths shall be shown and executed?}
-    \subitem \hyperlink{TODOELEMENT1a}{What are they?}
-    \item \hyperlink{TODOELEMENT2}{How many repetitions shall be performed for each path?}
-    \item \hyperlink{TODOELEMENT3}{What shall the participant be told when entering the experimental room? Provide written protocol.}
-    \item \hyperlink{TODOELEMENT4}{What information shall be encoded in a waypoint?}
-    \item \hyperlink{TODOELEMENT5}{How can waypoint information be effectively represented in 3D environment? What are the graphical markers aiding the participant?}
-    \item \hyperlink{TODOELEMENT6}{How many trials shall be performed for the same path prior to the data collection session?}
-    \item \hyperlink{TODOELEMENT7}{What execution information shall be collected?}
-    \subitem \hyperlink{TODOELEMENT7a}{What will be regarded as input to task execution?}
-    \subitem \hyperlink{TODOELEMENT7b}{What will be regarded as output?}
-    \item \hyperlink{TODOELEMENT8}{What kind of processing shall the data undergo before they can be used for NN training?}
-    \item \hyperlink{TODOELEMENT9}{What is the data collection mechanism, i.e. set of software components that are exercised to collect data?}
-\end{itemize}
 \chapter*{Acknowledgements}
 \pagenumbering{Roman}
 Write acknowledgements here.
@@ -195,63 +179,253 @@ Write acknowledgements here.
 
 \pagenumbering{arabic}
 
-\chapter*{Introduction}
-Motion coordination is amongst the hardest challenges in interactions between humans, requiring various cognitive and motor skills to work together. In human-robot interaction, the challenge is even greater, since the robot must be able to understand and predict the humans' movements, while also adapting its own movements to their dynamics. 
+% Content Outline
 
-Keeping in mind that humans often use other mean of communications to tell their intentions, such as gaze, facial expressions, gestures, words and so on, the robot must be able to overcome the lack of these communication channels, by relying only on the humans' movements.
+% 1. Introduction 3P
+    % 1.1 Problem Definition
+        % Description of collaborative robotics
+        % Why the need for a human-like motion
+        
+    % 1.2 Problem Relevance in Computer Engineering
+        % 
 
-This interaction is carried indirectly through touch between the humans and the robot, by making use of some object carried by both of them, or directly through touch, by making use of the robot's end-effector. The word "touch" has many definitions, the most concrete and simple one is the physical contact between two bodies, but it carries a deeper meaning, forgotten through the evolution of the human species: the ability to communicate and understand each other through the sense of touch. It allowed humans to survive by forming bonds when language wasn't yet available. 
+% 2 State of the Art 5-10P
+    % 2.1 Current Research in Human-Robot Interaction
+        % Studies about 
 
-Reshaped and suppressed through the evolution of the societal structures and hierarchies, the sense of touch has been relegated to a secondary role. To worsen the situation, the last pandemic has forced humans to avoid physical contact for a time enough to forget the importance of it, opening a wound we yet have to heal. 
+    % 2.2 Literature Limitations and Open Challenges
+        % Knowledge of human motion in 3D space
+        % Lack of purely 3D algorithms
+        % 
 
-This inadequacy of expressing ourselves through touch reflects on the way new humanoid robots are designed, often equipped with a touch screen rather than a touch-sensitive area on their body. While facials details are overengineered to express emotions, the robot's body is often designed to be a rigid and cold object, rather than an active participant in the interaction. 
+% 3 Proposed Solution 20P
+    % 3.1 Methodology
+    % 3.2 System Design
+        % 3.2.1 Hapti Device
+    % 3.3 Haptic Interface Software
+        % 3.3.1 ROS2 Controller
+    % 3.4 Data Processing Pipeline
+        % 3.4.1 Temporal Characterization
+        % 3.4.2 Spatial Characterization
+    % 3.5 Generative Model
 
-Endowing robots with the ability to move in a human-like way, to touch and be touched, to communicate and understand each other through the sense of touch, is a challenge that requires a deep understanding of human motion and the ability to replicate it in a robot. A predefined interaction protocol is not enough to achieve this goal, since it doesn't allow the robot to adapt to the human's movements, neither to predict them. 
+% 4 Experimental Validation 20P
+    % 4.1 Task Design
+        % 4.1.1 Waypoint Definition
+        % 4.1.2 Path Description
+        % 4.1.3 Path Taxonomy
+    % 4.2 Evaluation Metrics
+    % 4.3 Experimental Protocol
+        % 4.3.1 Source of Bias
+        % 4.3.2 Tunable Parameters
+        % 4.3.3 Parameter Values
+        % 4.3.4 Written Protocol
+    % 4.4 Experimental Data
+    % 4.5 Statistical Significance
+    % 4.6 System Evaluation
 
-This aspect does not only regard collaborative, industrial related tasks, but also social and assistive robotics, where the robot has to understand the human's feeling and emotions, and adapt its behavior on the fly, to provide a more natural and comfortable interaction. A mandatory capability in hospital and elderly care.
+% 5 Conclusion 3-5P
 
-\chapter{State of the art}
-The following section discusses the current advancements in human-robot interaction, and the limitations of the current literature. The goal is to provide a comprehensive overview of the state of the art in this field, highlighting the key challenges and opportunities for future research.  
-\section{Current research in human-robot interaction}
-Some studies have already defined a way to quantify the comfort of a robot's motion \cite{coccaro}, others have investigated humans ability to detect if a robot movement reflects a human-like motion or not, comparing sight and proprioception skills \cite{touchvsvision}. Intent communication through motion is a well-studied topic \cite{leadership} a robot could tell in advance its plan through its movements to become predictable and thus more comfortable to interact with. Some research have already been done in that way, by evaluating the human signature and replicating in a collaborative task with a simulated user \cite{motion_signature}.
+% 6 Bibliography
 
-First, to teach a robot to move in a human-like way, it is necessary to understand how humans move. The theory of kinematics of rapid human movements describes motion as a sequence of lognormal strokes, motor primitives generated by the Central Nervous System, treated as building blocks of complex movements that can be superimposed \cite{lognorm_principle}. By understanding the underlying principles of human motion, a software has been developed that extracts the lognormal parameters from human movements \cite{idelog3d}. This software can be applied over a dataset of human movements to extract the lognormal parameters and then use them to generate new movements that are similar to the original ones through a generative model, which could be a neural network or a more biologically plausible model. 
+%==============================================================================
+% 1. Introduction
+%==============================================================================
+\chapter{Introduction}
+Initially it was through the steam engine, then the electricity, then robots, and now it is through their collaboration with humans that humankind has been able to improve productivity in workplaces. The times when robots were used to replace humans in caged hazardous environments to perform repetitive tasks are now behind this day.  
 
-Then, it could be possible to study how to adapt the robot's motion to the human partner's dynamics, by integrating bio-inspired adaptive mechanisms that modulate the robot's movement in response to human actions. This could reduce both physical and cognitive workload during interaction, making the collaboration more efficient and comfortable for both parties. This information could be given by teaching the model to predict the human's next movement through the leader follower dynamics, and adapt the movement signature to the human's one. If the human signature is not available, the robot could learn it through interaction, by observing their movements and adapting its own motion accordingly.
+The human wish to bring to life a being in their own image has been a long-standing dream, often expressed in literature and cinema. From the Golem of Prague to the replicants of Blade Runner, from their first appearance Rossum's Universal Robots to the robots of Isaac Asimov's stories. 
 
-However, while the theory of kinematics of rapid human movements provides a framework for understanding human motion, the planning of robot motion is a complex problem that requires the integration of multiple factors. 
+% Why in human image though? Surely, a being could be better than a human being, not only in terms of physical capabilities, but also in terms of intelligence, empathy, and morality. However, the human being is a human only reference, and thus the only one they can relate to. This is why, when humans dream of an artificial being, it possesses their same capabilities. 
+
+% The design of a robot that looks like a human being is a problem that has been somewhat solved, at least in terms of appearance. Of course, it won't be made of meat and grow a skin, but it can be made of materials which aesthetically resemble a human being. To touch, it can be made of materials that feel like a human being. To see, that look like a human being. But to work, it must be designed to work like a human being, and to think, it must be designed to think like a human being, or at least to think in a way that a human being can understand.
+
+% In order to work, to solve a task, a robot needs a set of instructions and tools to perform it. Until the recent past, these instructions were given to the robot by a human being, who had to program it to perform a specific task. This process not only was time-consuming, but also couldn't be generalized to other tasks, since the robot was designed to perform a specific task. 
+
+% This capacity of humans to solve a task and generalize their knowledge to other tasks is what makes them different from robots. A human being can learn a task and find patterns that allow them to solve other tasks by reusing the knowledge acquired. On the other hand, a robot can only solve a task if it has been programmed to do so. Only recently, with the development of machine learning techniques, robots have been able to learn a task by observing a human being performing it. However, this learning process is still limited to the specific task observed, and can hardly be generalized to other tasks. 
+
+% Not only can a neural network seldom generalize knowledge to other tasks, but it needs a large amount of data to learn a task. This amount grows with the complexity of the task, and makes the learning process time-consuming and expensive. Sometimes, it's not even feasible to build such a large dataset and network, as they require a large amount of computational resources, during training and inference stages, which are not always available.
+
+% Nonetheless, humans achieve more in less time, with less resources, and with fewer data. Their brain is able to learn a task by working on a higher level of abstraction, by finding patterns and rules that do not depend on the specific task, but rather on the underlying principles of the task itself. This skill is what a robot needs in order to learn a task and generalize its knowledge to other tasks: a meaningful representation of the task, highlighting these repetitive patterns and structures. 
+
+% A deep neural network is able to find these patterns, but requires the aforementioned large dataset and computational resources. Having more weights, in order to express the variability of the problem --- so to stay in the bias-variance trade off --- it requires more data. On the opposite, a network with fewer weights, but working on high level features --- a model of the problem --- may need fewer data and resources to reach the same expressiveness.
+
+% Regarding the task of moving in a three-dimensional space, humans spend their initial years of life learning how to move in that space, and how to interact with it. They learn how to move their body, how to grasp objects, how to avoid obstacles, and how to interact with other humans. This knowledge is then generalized to other tasks, such as playing sports, dancing, or even driving a car. 
+
+% This task requires the coordination of multiple body parts, the integration of sensory inputs, and the prediction of the consequences of their actions. First and foremost, the proprioception is the sense that allows human to perceive the position and movement of their body parts, even without looking at them. This sense originates from proprioceptors, a specialized class of mechanosensory neurons whose nerve endings reach muscles, tendons, and joints. As the muscles move, the proprioceptors nerves are stimulated, and the information is sent to the spinal cord. From the spinal cord, the information is sent into two different pathways: the dorsal column-medial lemniscal pathway, which carries the information to the brainstem and then to the thalamus, and the spinocerebellar pathway, which carries the information to the cerebellum. Of the two paths, the former is the one that allows humans to perceive the position and movement of their body parts consciously, while the latter is the one that allows them to coordinate their movements unconsciously. 
+
+
+% This split of the proprioception pathways is mandatory, as it allows a human to focus on a task without being distracted by the position and movement of their body parts. Though, the question now relies on how to endow information about the task at hand and the human's body parts. 
+
+% What is the problem discussed in this thesis? Why is it relevant to this field and investigated? What would its solution bring to the table, in terms of scientific knowledge and practical applications? 
+
+In the following two sections, the problem will, firstly, be defined and, secondly, its relevance in the field of computer engineering will be discussed. The goal is to provide a clear understanding of the problem at hand, to justify the need for a solution and to highlight the potential impact of the proposed solution on the field of computer engineering.
+
+Once the problem has been sufficiently explained, the subsequent chapters will provide the reader with an overview of the current state of the art, the design behind the proposed solutions, an analysis on the results found, and finally a conclusion on the work done, highlighting the contributions made to the field of computer engineering and the potential for future research in this area.
+\section{Problem Definition}
+
+% Human robot collaboration
+
+Nowadays, robots collaborate with humans in a shared workspace, where they assist the workers in performing variable tasks that require precision. This collaboration is made possible by the development of advanced sensors, actuators, and control algorithms that allow robots to perceive and respond to the environment in real-time.
+
+For this reason, modern robotics --- collaborative robotics particularly --- has become an interdisciplinary field. Teams of engineers with different backgrounds, such as mechanical, electrical, computer and software work together to design and develop robots that can collaborate with humans in a safe and efficient manner. 
+
+On this thread, the following work addresses the problem of safety and efficiency in human-robot interaction. One of the most underestimated aspects of this problem is the human perception of the robot's motion. To be more predictable, it has to be human-like, since we as humans perceive something to be "\textit{better}" when it resembles us. To this end, the solution regards endowing robots with the skill of moving like humans.
+
+Human-like motion increases predictability, safety and comfort during the robot interaction with a human. As workers are used to cooperate with other humans, they expect the robot to move similarly. If the robot moves through unexpected fast uniform movements, the human partner may be startled, or the robot may hurt the human partner. On the other hand, if the robot moves as a human worker would, the human partner can predict its movements. By predicting the robot's movements, the human partner can adjust their own movements accordingly, reducing the risk of collisions and improving overall safety.
+
+Thanks to the predictability of the robot's movements, the human partner can also feel more comfortable and confident in interacting with the robot. This can lead to increased productivity and efficiency in collaborative tasks.
+
+To teach this skill, its characteristics must be captured in a set of features learnable by a generative model. These features should explain the underlying principles of human motion, and be applicable to any dataset of human movements. Once a model learns these features, it can generate new movements without overfitting a large set of parameters over a specific dataset, which would make the model less generalizable and more complex.
+
+A generative model able to generalize means reducing the amount of data needed to train it and also avoid the need for fine-tuning. This is a crucial aspect, as the motion must be generated during the robot's operation, i.e. in real-time. This requirement means that, if the model does have too many weights, the robot must mount highly performant hardware, thus inherently increasing the cost of implementation.
+
+Avoiding fine-tuning needs is mandatory, as not all situations can be expressed inside a dataset. When a human worker has to solve a task, they do not observe their dataset of previous actions to proceed. Instead, they develop a meaningful representation of their past actions in order to understand the solution. Thus, endowing the same methodological reasoning inside this work is inevitably necessary, otherwise those desired results will never be achieved, and the generative model won't be able to operate in any environment, as no task is the same as the previous ones.
+
+
+
+
+\section{Problem Relevance in Computer Engineering}
+
+%==============================================================================
+% 2. State of the Art
+%==============================================================================
+\chapter{State of the Art}
+The following section discusses the current advancements in human-robot interaction, and the limitations of the current literature. The goal is to provide the reader with a comprehensive overview of the state of the art in this field, highlighting challenges and opportunities for future research.
+
+\section{Current Research in Human-Robot Interaction}
+The interaction between humans and robots is a complex problem that spans various fields: robotics, human-computer interaction, psychology, neuroscience, and so on. Humans perceive robot motions comfortable when resembling human-like movements, quantifying this aspect as the HL (Human Likeness) index \cite{coccaro}. But in the scenario of interaction.
+
+% Some studies have already defined a way to quantify the comfort of a robot's motion \cite{coccaro}, others have investigated humans ability to detect if a robot movement reflects a human-like motion or not, comparing sight and proprioception skills \cite{touchvsvision}. Intent communication through motion is a well-studied topic \cite{leadership} a robot could tell in advance its plan through its movements to become predictable and thus more comfortable to interact with. Some research have already been done in that way, by evaluating the human signature and replicating in a collaborative task with a simulated user \cite{motion_signature}.
+
+% First, to teach a robot to move in a human-like way, it is necessary to understand how humans move. The theory of kinematics of rapid human movements describes motion as a sequence of lognormal strokes, motor primitives generated by the Central Nervous System, treated as building blocks of complex movements that can be superimposed \cite{lognorm_principle}. By understanding the underlying principles of human motion, a software has been developed that extracts the lognormal parameters from human movements \cite{idelog3d}. This software can be applied over a dataset of human movements to extract the lognormal parameters and then use them to generate new movements that are similar to the original ones through a generative model, which could be a neural network or a more biologically plausible model. 
+
+% Then, it could be possible to study how to adapt the robot's motion to the human partner's dynamics, by integrating bio-inspired adaptive mechanisms that modulate the robot's movement in response to human actions. This could reduce both physical and cognitive workload during interaction, making the collaboration more efficient and comfortable for both parties. This information could be given by teaching the model to predict the human's next movement through the leader follower dynamics, and adapt the movement signature to the human's one. If the human signature is not available, the robot could learn it through interaction, by observing their movements and adapting its own motion accordingly.
+
+% However, while the theory of kinematics of rapid human movements provides a framework for understanding human motion, the planning of robot motion is a complex problem that requires the integration of multiple factors. 
 
 
 
 % Since humans associate anthropomorphic motion with comfort, an important challenge in physical human-robot interaction is to endow robots with generative mechanisms capable of approximating human motor behavior. The kinematic theory of rapid human movements describes motion as a sequence of lognormal strokes, motor primitives generated by the Central Nervous System, treated as building blocks that can be superimposed to generate complex movements. Moreover, since collaboration requires adaptation to a partner's dynamics, bio-inspired adaptive mechanisms can be integrated to modulate the robot's movement in response to human actions, reducing both physical and cognitive workload during interaction.
 
-\section{Literature limitations}
+\section{Literature Limitations and Open Challenges}
 
+%==============================================================================
+% 3. Proposed Solution
+%==============================================================================
 \chapter{Proposed Solution}
-This chapter gives a comprehensive overview of the solution adopted to address the problem at hand, spanning from the experimental protocol chosen, the data collection system described in its software and hardware components, to the data processing tools. The goal is to provide a clear understanding of the choices, weighing pros and cons, so to justify the decisions made.
+
+This chapter gives a comprehensive overview of the solution adopted to address the problem at hand, starting from the device chosen, going through the data collection and processing systems, then ending with the generative model and its performance evaluation. The goal is to provide the reader with a clear understanding of the choices, weighing pros and cons, so to justify the decisions made.
+% The problem has been approached by combining software modules, each responsible for a specific task and independent with respect to the others. This solution allows to easily replace modules, speeding up the development process by allowing the testing of the single units of the system, and avoids coupling.
+
 \section{Methodology}
-For this problem, various software and hardware components are required, ranging from the collection of the data to its processing and analysis, then to the generation of new data and its execution on the very same system that collected the original data. 
+As required by the problem to solve, the chosen methodological approach focuses on the data. This decision was natural, as having to put together various independent system means looking for a common interface for all of them. And in this case, that common interface is the data flow. 
 
-In the data collection mechanism, the system must interface itself with a human subject, showing them a path to follow and collecting their movements as they execute the task. The result of this process is a dataset that contains the various trajectories of the subjects' movements, which can be used to analyze their behavior and extract useful information for the generation of new movements.
+This data is the very essence of the work, and its flow and change must be carefully observed. From the data acquisition, human motion characteristics must be present in its content. There may be errors from the collection device (measurement), errors from the collection itself (bias), errors from the software modules themselves (bugs), and finally, error from the generative model itself, due to a wrong architecture. 
 
-Rather than giving the raw data to a neural network, which would slow down the learning process by increasing its complexity, the data is processed to extract more meaningful information, which will speed up the learning process and make it more efficient. So, by the combination of a theoretical model and data-driven techniques, a bio-inspired generative model can be developed.
+Having in mind this flow, the methodology originates immediately, and asks for modularity. Someday, the data collection may be done through motion trackers, recording the motion of another part of the body. Meanwhile, instead of choosing one step adopted by this solution, someone else may try a different technique. Whatever is the reason behind the change, and the module changed, the flow of data and its meaning will always be the same.
 
-The generated movements can then be executed on the same system that collected the original data, allowing for a "hand to hand" comparison between the original and generated movements, through the dyadic interaction between the human subject and the system.
+Other than modularity, in this methodology the data flows through an ordered sequence of actions: a pipeline. While this aspect seems to regard more the system design, it is important to have in mind that also the decision of the collection method, the device it needs, the task assigned, and the experimental campaign themselves are steps that shape the data during its flow. And these decision may be changed later, but the pipeline must still work nonetheless.
 
+\section{System Design}
+The requirements that arose from choosing this methodology now apply to the composition of subsystem inside the overall system itself. Each subsystem corresponds to an interchangeable module; as required by the methodology adopted each is a step of the pipeline in charge of managing data. 
+
+The three main subsystems are the following
+\begin{itemize}
+    \item The data collection system concerns recording the human motion data
+    \begin{itemize}
+        \item The experimental campaign, containing experimental protocol and designed tasks
+        \item The data collection hardware and software
+        \item The kind of data expected in input
+        \item The collected dataset provided as output
+        \item The interface with the user, which contains a set of tasks that must be formally defined to be also interpretable by a model
+    \end{itemize}
+    \item The data processing system is responsible for extracting the features that best describe the recorded data
+    \begin{itemize}
+        \item The interface with the data collection system, through accessing the collected dataset
+        \item The codification of a theoretical model behind the reconstruction of the collected data through optimization problems
+        \item The reconstructed dataset, which entries are the reformulation of the collected data through a set of feature, explained by the model adopted
+    \end{itemize}
+    \item The data generation system manages the generation of new human motion data
+    \begin{itemize}
+        \item The interface with the data processing system, through reading the reconstructed dataset
+        \item The interface with the tasks, which interpretation must be the same of the human subject to not introduce bias in the dataset
+        \item The neural network model architecture, its training and generation methods
+        \item The training procedure defined by the loss function, the set of features to take as input, as recurrent input from the previous task, the expected outputs, and the data sets
+    \end{itemize}
+\end{itemize}
+
+The following subsections provide a deeper insight into each system, without focusing on the implementation of them, which main modules are instead detailed in the next three sections, one for each subsystem. This more general overview serves to understand how the three system work in an architectural point of view.
+
+Regarding the reasoning behind parameters or techniques adopted by these subsystems, their explanation is instead given in the next chapter.
+
+\subsection{Data Collection System}
+The data collection system is responsible for recording the human motion data. It is composed by the experiments themselves, the haptic device used to record the human motion, and the software that manages the communication between the experimenter, the haptic device and the human subject.
+\paragraph{Haptic Device} 
+The device adopted for the problem is \textit{Touch}, from \textit{3D Systems}. It is a haptic device with six degrees of freedom, allowing it to move in three-dimensional space and rotate around three axes. It is equipped with a stylus that can be held by the user, allowing them to interact with the device. The device is able to produce some linear forces, which are applied to the user's hand through the stylus. 
+
+This kind of devices is commonly used in teleoperation, in which the user controls a remote robot by moving the stylus and feeling the forces applied by the robot. In this case the device is used only to collect data from the user's movements. 
+
+\subsection{Data Processing System}
+The data processing system is responsible for processing the collected data by extracting the features that describe it according to the theoretical model. This model is based on the theory of kinematics of rapid human movements, which describes human motion as a sequence of primitives, called lognormal strokes, that can be superimposed to generate complex movements. 
+
+\subsection{Data Generation System}
+The data generation system is responsible for generating new human motion data, based on the features extracted from the collected data, and the task to perform described in an experiment. 
+
+
+\section{Haptic Interface Software}
+The haptic interface software manages both the user interface of the haptic device and the communication with the robot.
+
+From the side of the experimenter, the software component allows them to control the experiment execution, by selecting its configurations, like the path to show, the number of repetitions, the sampling frequency, and so on.
+
+From the side of the human subject, the software component interfaces with them through a simulated environment that projects the position of the haptic device inside a virtual space. In this space, the path is represented as an ordered sequence of spheres, while the device is represented as a sphere that can be moved by the user through their interaction with the device.
+
+\subsection{\texttt{ROS2} Controller}
+The haptic device controller is in responsible for managing the communication between experiment, haptic device and subject through sending commands and receiving data, and of the experiment execution. 
+
+The controller takes as input the configuration of the experiment, which includes the path to show, the number of repetitions, the size of the waypoints, the forces to apply and so on. From this information, during the execution it is able to communicate with the experiment through the keyboard, and with the haptic device through its command and state interfaces. The controller is also responsible for collecting the data from the haptic device, which includes the position, orientation, linear and angular velocities.
+
+Furthermore, it is in charge of communicating with the subject through the screen via  the visualization of the path during the pre-training phase. In this case, the role of the controller is to communicate a series of colored waypoints, and the current position of the haptic device to the visualization software \texttt{RViz2}, which is responsible for rendering the scene on the screen. The controller applies the haptic feedback to the user, by computing the forces to apply to the haptic device based on the current position of the device and the position of the next waypoint, multiplied of a gain factor and the distance between the two.
+% The software component aids the user in following the path by providing them with visual and haptic feedback. The former is given through the visualization of a colored sequence of spheres, in which the color indicates the progress along the path. The latter is given by applying attractive forces towards the next waypoint. Though, since these feedbacks would poison the data, they are disabled during the collection phase. This is because the goal of the experiment is to collect data that reflects the user's natural movements, without any external influence, while taking into account the user awareness of the path to follow. Nonetheless, the more accurate the user is in following the path, the more accurate the collected data will be, and thus the more accurate the generative model will be. Although, this goes in pair with the number of repetitions, paths and waypoints. This is a trade-off between the accuracy of the data, the naturalness of the user's movements and the possible sample poisoning by their fatigue.
+
+\section{Data Processing Pipeline}
+In the data processing pipeline the collected data is transformed into a representation that reflects the adoption of the theoretical model of human motion. This is done by finding a set of features that, when combined, can reconstruct the original data sufficiently well. In order to do so, a formal definition of the theoretical model is required, as its implementation is given in these software components.
+
+
+
+
+% \subsection{Temporal Characterization}
+% In particular, the crucial information that can be extracted from the dataset is the lognormal parameters of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones. 
+
+% In literature there are already some software components that can extract the lognormal parameters from human movements, such as the \textit{idelog3d} software. Once this software is applied to the dataset, it will output a new dataset that contains the parameters of each rapid movement across two waypoints, which can be learned by the generative model. Once trained, the model can provide the velocity profile of a new movement across two waypoints through the application of the lognormal parameters.
+
+% \subsection{Spatial Characterization}
+% Regarding the spatial characterization of the movements, it would be handy to develop a software able to characterize the spatial properties of the movements, such as the starting and ending points, the curvature, the length and so on. In other words, the software should be able to extract the spatial properties of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones.
+
+% A possible interpretation of the spatial properties of a movement is to consider it as a Bézier curve, actually a weighted spline Bézier curve, which is defined by a set of control points to which the curve is attracted. The control points are not necessarily the waypoints, while the weights are the parameters that define the attraction of the curve to the control points. The generative model could come with a set of control points(and eventually weights) that define the shape of the curve. In this case, the difference between waypoints and control points is that the former are the points that the model is supposed to reach, while the latter are the points to which the model's curve is attracted to.
+
+% For instance, one possible spatial representation is the spline Bézier curve, which comes in handy since it doesn't always reach the target points, rather it tries to get as close as possible to them, which is what humans do when they move. The Bézier curve is defined by a set of control points, which can be used to define the shape of the curve. In order to teach a generative model to draw such lines, it is necessary to extract them from the actual path samples draw from the subjects movements.
+% This software component should be able to provide the generative model with properties that are independent of the time characterization and explained by the scientific literature.
+
+\section{Generative Model}
+The generative model is trained with the dataset of movements, extended with the temporal and spatial characterizations, to learn the underlying principles of human motion. Once trained, the model can generate new movements that are similar to the original ones, by providing the path in the space and its time characterization through a velocity profile derived from the lognormal parameters. The generated movements can then be executed on the same system that collected the original data.
+
+%==============================================================================
+% 4. Experimental Validation
+%==============================================================================
+\chapter{Experimental Validation}
 \section{Task Design}
-The goal of the experiments is relatively simple: collect a dataset of rapid and natural human movements. However, in order to obtain a dataset of sort, it is mandatory to provide the same task to each subject. Nonetheless, the same input must be grasped equally by different subjects. Thus, the deletion of ambiguity in task definition is imperative.
+The goal of the experiment campaign is relatively simple: the collection of a dataset of rapid and natural human movements. However, in order to obtain a dataset of sort, it is mandatory to provide the same task to each subject. Nonetheless, the same input must be grasped equally by different subjects. Thus, the deletion of ambiguity in task definition is imperative.
+
 \subsection{Waypoint Definition}
-\hypertarget{TODOELEMENT4}
 As previously mentioned, a path is defined as an ordered sequence of points in the space, called waypoints, each defined by its position in the space. Visually, they are represented through spheres, which size is a trade-off between the accuracy of the collected data and the naturalness of the user's movements. However, even though the user should try to follow the path by crossing the waypoints, some deviation from them is to be expected, since no human movement ever perfectly follows a path. In the same way, a generative model should think of waypoints as a reference, akin to an attractor, rather than a strict constraint.
 
 A path of two waypoints is simply a straight line between the two. On the other hand, a path of three waypoints is interpretable as a curve, since the user is supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them: the result is a curve that starts from the first waypoint, gets near the second one, and ends almost on the third one. The same principle applies to paths of more than three waypoints, which are interpreted as a sequence of curves, which curvature is inversely related to the alignment of the waypoints.
 
-\hypertarget{TODOELEMENT5}
 The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space. 
 
 \subsection{Path Description}
 
-\hypertarget{TODOELEMENT1a}
 A path, in simple terms, is an ordered sequence of waypoints. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. However, a human's perception of a three-dimensional space is not mathematical, and thus it is not as accurate as the model one. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path.
 
 A path could represent a common task that a human subject may perform in their daily life, such as moving an object from one place to another, or using a particular tool. The path should be designed to be as intuitive and natural as possible, eventually combining the geometrical description with a semantic one, ensuring that the subject grasps and performs it smoothly, avoiding unnatural movements that could poison the collected data.
@@ -270,7 +444,6 @@ The only issue with representing a path only by a sequence of points is that it 
 An idea to make this aspect stand out from the collected data could be the introduction of arrows in the visual environment, although this means crowding it with more information that could be distracting or hard to interpret for the user. Also, this requires defining other tunable parameters, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, at a specific size and orientation. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. In the end, it is mandatory to explain to the user that they are supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them, since this would lead to unnatural movements: the user should be encouraged to follow the path smoothly.
 
 \subsection{Path Taxonomy}
-\hypertarget{TODOELEMENT1}
 The paths that will be shown to the subject during the experiment are grouped into the following categories: 
 \begin{itemize}
     \item Burst: impulsive movements. Simple paths that help the subject getting used to the haptic device. 
@@ -293,9 +466,11 @@ The paths that will be shown to the subject during the experiment are grouped in
         \item Print uppercase $N$ which segments differ in plane 
     \end{itemize}
 \end{itemize}
+\section{Evaluation Metrics}
 
-\section{Session Design}
+\section{Experimental Protocol}
 The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.
+
 \subsection{Sources of Bias}
 To ensure consistency across different subjects, the experimental protocol should be designed to minimize any potential biases or confounding factors that could affect the results. For instance, it is necessary to simplify some complex terms by finding more intuitive and user-friendly ways to explain them, so to ensure user comprehension and engagement. 
 
@@ -304,7 +479,8 @@ Additionally, the protocol should be designed to minimize any potential sources 
 \subparagraph{Posture} The environment must be designed to ensure the user's safety and comfort, by providing them with a comfortable chair and ensuring that the haptic device is properly calibrated and adjusted to their physical characteristics (i.e. dominant hand, arm length, height, etc.) to reduce any potential sources of discomfort or fatigue and increase comfort during the experiment. The more the user feels relaxed, the more natural their movements will be, and thus the more accurate the collected data will be. 
 
 \subparagraph{Observer effect} The user is aware of the fact that they are being observed and that their movements are being recorded, which could affect their behavior and introduce some bias in the collected data. To prevent this kind of bias, the user should be informed about the purpose of the experiment and the data collection process, and they should be given the opportunity to ask questions and provide feedback. This will help to ensure that the user feels comfortable and engaged in the experiment, and that they are motivated to perform their best. Of course, any reveal of the purpose of the experiment should be done in a way that doesn't influence the user's behavior, and thus bias the collected data.
-\subsection{Tunable parameters}
+
+\subsection{Tunable Parameters}
 The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.  
 
 % In this scenario, the users interact with a system that shows them an ordered sequence of waypoints in the space, namely a path, and they are asked to follow them with their hand. As they move, the system collects the trajectory of their movements, expressed as an ordered sequence of timestamped points with respect to a reference frame. For convenience, the reference frame is assumed to be the robot's base frame, and the points are expressed in Cartesian coordinates, each sampled at a fixed frequency.
@@ -322,13 +498,32 @@ The session does have various parameters that need to be tuned in a trade-off be
     \item $N_P$: The number of paths, which can be increased to collect more diverse data, at the cost of increasing the length of the experiment. More paths would provide a better representation of the task space and allow to more generalization, but would also require more time and effort from the user. Although, having a few paths would limit the diversity of the data collected, and thus the generalization of the generative model.
     \item $R_t$ and $R_f$: The rest periods length and frequency (expressed as a fraction of $N_P$), which can be increased to reduce the fatigue of the user, at the cost of increasing the duration of the experiment. The rest periods need to be short to keep the user focused on the task, but long enough to allow them to recover from their fatigue, while not being felt coercive by the user. Moreover, the rest periods need to be frequent enough to allow the user to recover from their fatigue while executing the different paths, but not too frequent to make the user lose focus on the task. 
 \end{itemize}
+
+\subsection{Parameter Values}
+Regarding the aforementioned experimental parameters, the following values have been chosen: 
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|ccc|}
+    \hline
+    \textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
+    \hline
+    \hline
+    $W_s$ & Waypoint diameter & 0.05 m \\
+    $P_l$ & Path length & 2-7 waypoints \\
+    $P_r$ & Path repetitions & 20 repetitions \\
+    $N_P$ & Number of paths & 20 paths \\
+    $R_t$ & Rest time & 60s \\
+    $R_f$ & Rest frequency & $1/6$ \\
+    \hline
+\end{tabular}
+\end{table}
+As explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
+
 \subsection{Written Protocol}
-\hypertarget{TODOELEMENT3}
 Providing the user with a written protocol is mandatory not only to ensure that all the user have the same information, but also to ensure that they have the same understanding of the task. From the different equivalent sequences of words available to explain an instruction, the most intuitive should be chosen, to avoid any bias in the collected data. 
-\subparagraph{Input}\hypertarget{TODOELEMENT7a} In each experiment of a session a path is shown to the user, their goal is to traverse close to the waypoint as fast as possible, with the understanding that it's not strictly necessary to cross all the waypoints, but rather to think of them as attractors. They will first be pre-trained to follow the path with the aid of visual and haptic feedback, until they reach a certain level of proficiency, defined by the experimenter, and then they will be asked to follow the path without any aid, while the system collects their movements.
-\subparagraph{Result}
-\hypertarget{TODOELEMENT7}
-For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy. Other information like the user's hand orientation and the angular twist velocity are collected as well, but they are not needed for the generative model, since they are not used to generate new movements. They are collected to provide a more complete representation of the user's movements, and to eventually allow for a more detailed analysis of the data.
+\subparagraph{Input} In each experiment of a session a path is shown to the user, their goal is to traverse close to the waypoint as fast as possible, with the understanding that it's not strictly necessary to cross all the waypoints, but rather to think of them as attractors. They will first be pre-trained to follow the path with the aid of visual and haptic feedback, until they reach a certain level of proficiency, defined by the experimenter, and then they will be asked to follow the path without any aid, while the system collects their movements.
+\subparagraph{Result} For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy. Other information like the user's hand orientation and the angular twist velocity are collected as well, but they are not needed for the generative model, since they are not used to generate new movements. They are collected to provide a more complete representation of the user's movements, and to eventually allow for a more detailed analysis of the data.
 
 \begin{protocol}
 ... Welcome ... What's your dominant hand? (If no preference is expressed, pick left hand when possible). (Prepare the environment on the subject choice).
@@ -355,7 +550,6 @@ Every time you want to be placed to the start position and/or reset the executio
 \end{protocol}
 
 
-\hypertarget{TODOELEMENT7b}
 Those are the same inputs and outputs of the generative model, with the exception that it won't follow the same policies, but only understand the underlying principles from the dataset.
 
 
@@ -374,77 +568,22 @@ Those are the same inputs and outputs of the generative model, with the exceptio
 % \begin{equation}
 %     L_{i} = 
 % \end{equation}
-\section{System Design}
-\hypertarget{TODOELEMENT9}
-Before delving into the details of the solution adopted, it is necessary to provide a high-level overview of the system design. 
-\subsection{Haptic Device}
-The device adopted for the problem is \textit{Touch}, from \textit{3D Systems}. It is a haptic device with six degrees of freedom, allowing it to move in three-dimensional space and rotate around three axes. It is equipped with a stylus that can be held by the user, allowing them to interact with the device. The device is able to produce some linear forces, which are applied to the user's hand through the stylus. 
 
-This kind of devices is commonly used in teleoperation, where the user can control a remote robot by moving the stylus and feeling the forces applied by the robot. In this case the device is used to collect data from the user's movements. 
-\subsection{Haptic Interface Software}
-The haptic interface software manages both the user interface of the haptic device and the communication with the robot.
-
-From the side of the experimenter, the software component allows them to control the experiment execution, by selecting its configurations, like the path to show, the number of repetitions, the sampling frequency, and so on.
-
-From the side of the human subject, the software component interfaces with them through a simulated environment that projects the position of the haptic device inside a virtual space. In this space, the path is represented as an ordered sequence of spheres, while the device is represented as a sphere that can be moved by the user through their interaction with the device.
-
-\paragraph{\texttt{ROS2} Controller}
-The haptic device controller is responsible of managing the communication between experiment, haptic device and subject through sending commands and receiving data, and of the experiment execution. 
-
-The controller takes as input the configuration of the experiment, which includes the path to show, the number of repetitions, the size of the waypoints, the forces to apply and so on. From these information, during the execution it is able to communicate with the experiment through the keyboard, and with the haptic device through its command and state interfaces. The controller is also responsible for collecting the data from the haptic device, which includes the position, orientation, linear and angular velocities.
-
-Furthermore, it is responsible of communicating with the subject through the screen via  the visualization of the path during the pre-training phase. In this case, the role of the controller is to communicate a series of colored waypoints, and the current position of the haptic device to the visualization software \texttt{RViz2}, which is responsible for rendering the scene on the screen. The controller applies the haptic feedback to the user, by computing the forces to apply to the haptic device based on the current position of the device and the position of the next waypoint, multiplied of a gain factor and the distance between the two.
-% The software component aids the user in following the path by providing them with visual and haptic feedback. The former is given through the visualization of a colored sequence of spheres, in which the color indicates the progress along the path. The latter is given by applying attractive forces towards the next waypoint. Though, since these feedbacks would poison the data, they are disabled during the collection phase. This is because the goal of the experiment is to collect data that reflects the user's natural movements, without any external influence, while taking into account the user awareness of the path to follow. Nonetheless, the more accurate the user is in following the path, the more accurate the collected data will be, and thus the more accurate the generative model will be. Although, this goes in pair with the number of repetitions, paths and waypoints. This is a trade-off between the accuracy of the data, the naturalness of the user's movements and the possible sample poisoning by their fatigue.
-
-
-\subsection{Data Processing Software}
-The data processing software is responsible for analyzing the collected dataset of human movements and extracting meaningful information that can be used to train a generative model, instead of giving the raw data to the model, which would slow down the learning process by increasing its complexity.
-
-\paragraph{Temporal Characterization}
-\hypertarget{TODOELEMENT8}
-In particular, the crucial information that can be extracted from the dataset is the lognormal parameters of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones. 
-
-In literature there are already some software components that can extract the lognormal parameters from human movements, such as the \textit{idelog3d} software. Once this software is applied to the dataset, it will output a new dataset that contains the parameters of each rapid movement across two waypoints, which can be learned by the generative model. Once trained, the model can provide the velocity profile of a new movement across two waypoints through the application of the lognormal parameters.
-
-\paragraph{Spatial Characterization}
-Regarding the spatial characterization of the movements, it would be handy to develop a software able to characterize the spatial properties of the movements, such as the starting and ending points, the curvature, the length and so on. In other words, the software should be able to extract the spatial properties of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones.
-
-A possible interpretation of the spatial properties of a movement is to consider it as a Bézier curve, actually a weighted spline Bézier curve, which is defined by a set of control points to which the curve is attracted. The control points are not necessarily the waypoints, while the weights are the parameters that define the attraction of the curve to the control points. The generative model could come with a set of control points(and eventually weights) that define the shape of the curve. In this case, the difference between waypoints and control points is that the former are the points that the model is supposed to reach, while the latter are the points to which the model's curve is attracted to.
-
-For instance, one possible spatial representation is the spline Bézier curve, which comes in handy since it doesn't always reach the target points, rather it tries to get as close as possible to them, which is what humans do when they move. The Bézier curve is defined by a set of control points, which can be used to define the shape of the curve. In order to teach a generative model to draw such lines, it is necessary to extract them from the actual path samples draw from the subjects movements.
-% This software component should be able to provide the generative model with properties that are independent of the time characterization and explained by the scientific literature.
-
-\subsection{Generative Model}
-The generative model is trained with the dataset of movements, extended with the temporal and spatial characterizations, to learn the underlying principles of human motion. Once trained, the model can generate new movements that are similar to the original ones, by providing the path in the space and its time characterization through a velocity profile derived from the lognormal parameters. The generated movements can then be executed on the same system that collected the original data.
-\chapter{Experimental Validation}
-\section{Experimental Setup}
-Regarding \hypertarget{TODOELEMENT2} the aforementioned experimental parameters, the following values have been chosen: 
-
-\begin{table}[h!]
-    \centering
-    \begin{tabular}{|ccc|}
-    \hline
-    \textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
-    \hline
-    \hline
-    $W_s$ & Waypoint diameter & 0.05 m \\
-    $P_l$ & Path length & 2-7 waypoints \\
-    $P_r$ & Path repetitions & 20 repetitions \\
-    $N_P$ & Number of paths & 20 paths \\
-    $R_t$ & Rest time & 60s \\
-    $R_f$ & Rest frequency & $1/6$ \\
-    \hline
-\end{tabular}
-\end{table}
-As \hypertarget{TODOELEMENT6} explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
 \section{Experimental Data}
 Through the executions of the experiments, the system collects a dataset of human movements, expressed as a sequence of timestamped points in the space, with respect to the reference frame. 
 
-
-\section{Results}
-
 \section{Statistical Significance}
+
+\section{System Evaluation}
+
+%==============================================================================
+% 5. Conclusion
+%==============================================================================
 \chapter{Conclusion}
 Write the conclusion here.
-\printbibliography
+
+%==============================================================================
+% 6. Bibliography
+%==============================================================================
+\printbibliography[heading=bibnumbered]
 \end{document}

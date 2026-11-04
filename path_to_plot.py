@@ -1,4 +1,5 @@
 import math
+from yaml import load, dump
 from typing import Optional
 from math import comb
 import numpy as np
@@ -8,7 +9,8 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from matplotlib.colors import LinearSegmentedColormap
 import os
 
-
+PATHS_LENGTH: float = 0.9
+PATH_CENTER:  float = 0.5
 # ============================================================
 # Utils
 # ============================================================
@@ -222,6 +224,77 @@ def invert_order(path: Path) -> Path:
             resulting_path.append((path[i][0], path[i][1], path[i][2]))
     return resulting_path
 
+
+import numpy as np
+from typing import List, Tuple
+
+# ── Costanti del cubo di normalizzazione ─────────────────────────────
+MINIMUM_X = MINIMUM_Y = -0.063997
+MINIMUM_Z = -0.067524
+MAXIMUM_X = MAXIMUM_Y = -MINIMUM_X       # 0.063997
+MAXIMUM_Z = 0.06047
+
+CUBE_MIN = np.array([MINIMUM_X, MINIMUM_Y, MINIMUM_Z])
+CUBE_MAX = np.array([MAXIMUM_X, MAXIMUM_Y, MAXIMUM_Z])
+CUBE_SPAN = CUBE_MAX - CUBE_MIN          # [0.127994, 0.127994, 0.127994]
+
+# Centro del cubo: (0, 0, -0.003527)
+CUBE_CENTER = (
+    0.0,
+    0.0,
+    (MAXIMUM_Z - MINIMUM_Z) / 2.0 + MINIMUM_Z
+)
+
+
+def normalize_path(
+    base_path: Path,
+    size: float = 1.0,
+    center: tuple[float, float, float] | None = None,
+    uniform: bool = True
+) -> Path:
+    """
+    Centra e scala un path all'interno del cubo definito dalle costanti globali.
+
+    - size: fattore di riempimento del cubo (1.0 = tocca i bordi,
+      0.5 = occupa metà dello spazio disponibile).
+    - center: dove piazzare il centro del bounding box.
+      Se None, usa CUBE_CENTER.
+    - uniform: se True, usa la STESSA scala su X/Y/Z (preserva le
+      proporzioni, inscrive il path nel cubo). Se False, scala ogni
+      asse indipendentemente per riempire esattamente il cubo.
+    I pesi (4° elemento delle tuple) non vengono toccati.
+    """
+    if center is None:
+        center = CUBE_CENTER
+
+    arr = np.array([p[:3] for p in base_path], dtype=float)   # (n,3)
+    mins, maxs = arr.min(axis=0), arr.max(axis=0)
+    bbox_center = (mins + maxs) / 2.0
+    spans = maxs - mins
+    spans[spans == 0] = 1.0                                   # evita div/0
+
+    # Spazio target = cubo × fattore di riempimento
+    target = CUBE_SPAN * size
+
+    if uniform:
+        # Preserva proporzioni: la scala è limitata dall'asse più "stretto"
+        scale_factor = np.min(target / spans)
+        scale = np.full(3, scale_factor)
+    else:
+        # Riempi il cubo su ogni asse indipendentemente
+        scale = target / spans
+
+    center_arr = np.array(center, dtype=float)
+    result: Path = []
+
+    for p in base_path:
+        xyz = (np.array(p[:3], dtype=float) - bbox_center) * scale + center_arr
+        if len(p) == 4:
+            result.append((float(xyz[0]), float(xyz[1]), float(xyz[2]), p[3]))
+        else:
+            result.append((float(xyz[0]), float(xyz[1]), float(xyz[2])))
+
+    return result
 # ============================================================
 # Input
 # ============================================================
@@ -421,13 +494,53 @@ for i in range(SPIRAL_WAYPOINTS):
     SPIRAL_Y.append((x, y, z))
 
 
-SPIRAL_CURVE: Path = [
-    (0.2, 0.2, PATH_CENTER),
-    (0.8, 0.4, PATH_CENTER, 35),
-    (0.5, .8, PATH_CENTER, 45),
-    (0.25, .55, PATH_CENTER, 15),
-    (0.55, .4, PATH_CENTER, 1)
+# SPIRAL_CURVE: Path = [
+#     (0.2, 0.2, PATH_CENTER),
+#     (0.8, 0.4, PATH_CENTER, 35),
+#     (0.5, .8, PATH_CENTER, 45),
+#     (0.25, .55, PATH_CENTER, 15),
+#     (0.55, .4, PATH_CENTER, 1)
+# ]
+
+GOLDEN_RATIO_SIZE = 0.5
+GOLDEN_RATIO_START_X = 0.1
+GOLDEN_RATIO_START_Y = 0.3
+
+GOLDEN_RATIO_CORRECTION = 0.3
+GOLDEN_RATIO = 1.61803398875 - GOLDEN_RATIO_CORRECTION
+
+GOLDEN_CURVE: Path = [
+    (GOLDEN_RATIO_START_X, GOLDEN_RATIO_START_Y, PATH_CENTER)
 ]
+dx = GOLDEN_RATIO_SIZE
+dy = GOLDEN_RATIO_SIZE
+WAYPOINTS_GOLDEN = 5
+for i in range(WAYPOINTS_GOLDEN):
+    if i%4 == 0:
+        x = GOLDEN_CURVE[-1][0] + dx
+        y = GOLDEN_CURVE[-1][1] + dy
+    elif i%4 == 1:
+        x = GOLDEN_CURVE[-1][0] + dx
+        y = GOLDEN_CURVE[-1][1] - dy
+    elif i%4 == 2:
+        x = GOLDEN_CURVE[-1][0] - dx
+        y = GOLDEN_CURVE[-1][1] - dy
+    else:
+        x = GOLDEN_CURVE[-1][0] - dx
+        y = GOLDEN_CURVE[-1][1] + dy
+
+    z = PATH_CENTER
+    weight = 100 if i < WAYPOINTS_GOLDEN - 1 else 1
+
+    GOLDEN_CURVE.append((x, y, z, weight))
+
+    dx /= GOLDEN_RATIO
+    dy /= GOLDEN_RATIO
+
+for point in GOLDEN_CURVE:
+    for coordinate in point[:3]:
+        if coordinate < 0 or coordinate > 1:
+            raise ValueError(f"Coordinate {coordinate} out of bounds for point {point} in GOLDEN_CURVE")
 
 OFFSET = 0.01
 CIRCLE_RADIUS = 0.33
@@ -471,7 +584,7 @@ ELLIPSE_XZ = [
 GEOMETRIC: dict[str, Path] = {
     'GEOMETRIC1_SPIRAL_3DY': SPIRAL_Y,
     'GEOMETRIC2_SPIRAL_3DX': counter_clock_wise_rotation(SPIRAL_Y),
-    'GEOMETRIC3_SPIRAL_XY': SPIRAL_CURVE,
+    'GEOMETRIC3_SPIRAL_XY': GOLDEN_CURVE,
     'GEOMETRIC4_CIRCLE_XY': CIRCLE_XY,
     'GEOMETRIC5_CIRCLE_ZX': CIRCLE_ZX,
     'GEOMETRIC6_ELLIPSE_XY': ELLIPSE_XY,
@@ -485,13 +598,26 @@ PATHS: dict[str, Path] = {
     **LETTER,
 }
 
+for name, path in PATHS.items():
+    PATHS[name] = normalize_path(path, size=PATHS_LENGTH, center=CUBE_CENTER, uniform=True)
 
 CONTROL_RATIO = 100
 CONTROL_WEIGHT = 50
 END_CONTROL_WEIGHT = CONTROL_WEIGHT / CONTROL_RATIO
 
 OUTPUT_FOLDER = os.path.join(os.getcwd(), 'images', 'paths')
+OUTPUT_YAML = os.path.join(os.getcwd(), 'images', 'paths.yaml')
 
+yaml_dict = {'paths': []}
+for path_name, path_value in PATHS.items():
+    yaml_dict['paths'].append({
+        'name': path_name,
+        'waypoints': [{'x': p[0], 'y': p[1], 'z': p[2]} for p in path_value]
+    })
+
+with open(OUTPUT_YAML, 'w') as yaml_file:
+    dump(yaml_dict, yaml_file)
+    
 if not os.path.exists(os.path.join(os.getcwd(), 'images')):
     raise ValueError('Path not found')
 
