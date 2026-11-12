@@ -1,3 +1,7 @@
 Geomagic
 Semicircumference
 proprioceptors
+Fitts
+isochrony
+saccades
+lognormals

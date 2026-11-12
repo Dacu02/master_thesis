@@ -1,0 +1,1 @@
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QCurvilinear movements instead obey the two-thirds power law \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, which links angular velocity to local curvature, while the isochrony principle states that movement duration is largely independent of trajectory extent \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
