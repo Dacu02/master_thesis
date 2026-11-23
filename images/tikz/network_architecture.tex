@@ -1,0 +1,67 @@
+% Layer-by-layer architecture of the stroke generation network.
+% Requires \usetikzlibrary{positioning, arrows.meta, calc, decorations.pathreplacing}.
+\begin{tikzpicture}[
+        node distance = 7mm and 5mm,
+        stage/.style = {draw, thick, rounded corners=2pt, fill=gray!10,
+            minimum width=24mm, minimum height=11mm, align=center, font=\small},
+        layer/.style = {stage, minimum width=36mm},
+        head/.style = {stage, minimum width=28mm, minimum height=13mm},
+        annotation/.style = {align=center, font=\small},
+        weights/.style = {font=\footnotesize\itshape},
+        flow/.style = {-{Stealth[length=2.4mm]}, thick},
+        subsystem brace/.style = {decorate, decoration={brace, amplitude=4pt}},
+    ]
+    % Shared stack of layers, from the input features to the MDN hidden layer
+    \node[layer] (input) {Input layer};
+    \node[layer, above=of input] (pad) {Padding};
+    \node[layer, above=of pad] (lstm)
+        {LSTM $18 \to 32$\\{\footnotesize\itshape 6\,656 weights}};
+    \node[layer, above=of lstm] (trunk)
+        {Linear $32 \to 32$, ReLU\\dropout 0.2\\{\footnotesize\itshape 1\,056 weights}};
+    \node[layer, above=of trunk] (hidden)
+        {Linear $32 \to 64$, ReLU\\dropout 0.2\\{\footnotesize\itshape 2\,112 weights}};
+
+    \draw[flow] (input) -- node[annotation, right] {$[N, 18]$} (pad);
+    \draw[flow] (pad) -- node[annotation, right] {$[B, T, 18]$} (lstm);
+    \draw[flow] (lstm) -- node[annotation, right] {$[B, T, 32] \to [N, 32]$} (trunk);
+    \draw[flow] (trunk) -- node[annotation, right] {$[N, 32]$} (hidden);
+
+    % Input features of each stroke
+    \node[annotation, anchor=north] (task) at ($(input.south)+(-25mm,-8mm)$)
+        {Task (7)\\$\Delta W^{k}_{k+1}$ (3), $\Delta W^{k}_{k+2}$ (3)\\first-stroke flag (1)};
+    \node[annotation, anchor=north] (prev) at ($(input.south)+(25mm,-8mm)$)
+        {Previous stroke (11)\\$\log \Delta t_p^{\mathrm{rel}}$, $\mu$, $\log\sigma$\\
+        $\log\lambda_s^{\mathrm{rel}}$, $\log\lambda_e^{\mathrm{rel}}$, $\mathbf{u}_s$ (3), $\mathbf{u}_e$ (3)};
+    \draw[flow] (task.north) |- ($(input.south)+(-9mm,-4mm)$) -- ([xshift=-9mm]input.south);
+    \draw[flow] (prev.north) |- ($(input.south)+(9mm,-4mm)$) -- ([xshift=9mm]input.south);
+
+    % Output heads of the mixture density network (K = 2 components, 13 outputs)
+    \node[head, above=14mm of hidden] (means)
+        {Linear $64 \to 26$\\reshape\\{\footnotesize\itshape 1\,690 weights}};
+    \node[head, left=of means] (mix)
+        {Linear $64 \to 2$\\softmax\\{\footnotesize\itshape 130 weights}};
+    \node[head, right=of means] (chol)
+        {Linear $64 \to 182$\\reshape\\{\footnotesize\itshape 11\,830 weights}};
+
+    \coordinate (split) at ($(hidden.north)+(0,7mm)$);
+    \draw[thick] (hidden.north) -- node[annotation, right] {$[N, 64]$} (split);
+    \draw[flow] (split) -| (mix.south);
+    \draw[flow] (split) -- (means.south);
+    \draw[flow] (split) -| (chol.south);
+
+    \node[annotation, above=of mix] (outmix) {Mixture weights\\$[N, 2]$};
+    \node[annotation, above=of means] (outmeans) {Means\\$[N, 2, 13]$};
+    \node[annotation, above=of chol] (outchol) {Cholesky factors\\$[N, 2, 13, 13]$};
+    \draw[flow] (mix) -- (outmix);
+    \draw[flow] (means) -- (outmeans);
+    \draw[flow] (chol) -- (outchol);
+
+    % Functional blocks grouping the layers
+    \draw[subsystem brace] ([xshift=-4mm]pad.south west) -- ([xshift=-4mm]lstm.north west)
+        node[annotation, midway, left=6pt] {Recurrent\\encoder};
+    \draw[subsystem brace] ([xshift=-4mm]trunk.south west) -- ([xshift=-4mm]trunk.north west)
+        node[annotation, midway, left=6pt] {Trunk};
+    \draw[subsystem brace] ($(hidden.south -| mix.west)+(-4mm,0)$)
+        -- ([xshift=-4mm]mix.north west)
+        node[annotation, midway, left=6pt] {Mixture\\density\\network};
+\end{tikzpicture}%

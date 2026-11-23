@@ -1,0 +1,68 @@
+\begin{tikzpicture}[
+    node distance = 6mm and 6mm,
+    subsystem/.style = {draw, thick, rounded corners=2pt, fill=gray!10,
+        minimum width=25mm, minimum height=19mm, align=center, font=\small},
+    dataset/.style = {draw, cylinder, shape border rotate=90, aspect=0.25,
+        fill=white, text width=23mm, minimum height=13mm,
+        align=center, font=\small},
+    task/.style = {draw, thick, rounded corners=2pt, fill=gray!25,
+        align=center, font=\small, inner sep=5pt},
+    annotation/.style = {align=center, font=\small},
+    flow/.style = {-{Stealth[length=2.4mm]}, thick},
+    control/.style = {-{Stealth[length=2mm]}},
+]
+    % Main pipeline: subsystems alternated with the datasets they exchange
+    \node[annotation] (input) {Human\\motion};
+    \node[subsystem, right=of input] (col)
+        {\textbf{Data}\\\textbf{collection}\\[2pt]\textit{records}\\\textit{human motion}};
+    \node[dataset, right=of col] (dcol) {Collected\\dataset};
+    \node[subsystem, right=of dcol] (proc)
+        {\textbf{Data}\\\textbf{processing}\\[2pt]\textit{extracts}\\\textit{model features}};
+    \node[dataset, right=of proc] (drec) {Reconstructed\\dataset};
+    \node[subsystem, right=of drec] (gen)
+        {\textbf{Data}\\\textbf{generation}\\[2pt]\textit{synthesises}\\\textit{new motion}};
+    \node[dataset, right=of gen] (dgen) {Generated\\dataset};
+
+    \draw[flow] (input) -- (col);
+    \draw[flow] (col) -- (dcol);
+    \draw[flow] (dcol) -- (proc);
+    \draw[flow] (proc) -- (drec);
+    \draw[flow] (drec) -- (gen);
+    \draw[flow] (gen) -- (dgen);
+
+    % Controls: what governs each subsystem
+    \node[annotation, above=8mm of {$(col.north)+(-5mm,0)$}] (ccol)
+        {Experimental\\protocol};
+    \node[annotation, above=8mm of proc.north] (cproc)
+        {Trajectory reconstruction\\model};
+    \node[annotation, above=8mm of {$(gen.north)+(2mm,0)$}] (cgen)
+        {Training\\procedure};
+
+    \draw[control] (ccol) -- (ccol |- col.north);
+    \draw[control] (cproc) -- (proc.north);
+    \draw[control] (cgen) -- (cgen |- gen.north);
+
+    % Shared task definition: one source interpreted by both the subject and the model
+    \node[task, above=27mm of proc.north] (task)
+        {Formal task definition\\(waypoint sets)};
+    \draw[control] (task.west) -| ($(col.north)+(9mm,0)$);
+    \draw[control] (task.east) -| ($(gen.north)+(-9mm,0)$);
+
+    % Autoregressive feedback: each generated stroke conditions the next one
+    \coordinate (fb) at ($(gen.east)!0.5!(dgen.west)$);
+    \coordinate (fbtop) at ($(gen.north east)+(-3mm,5mm)$);
+    \draw[control] (fb) |- (fbtop) -- (fbtop |- gen.north);
+    \node[annotation, anchor=south west] at (fb |- fbtop) {Previous\\stroke};
+
+    % Mechanisms: what implements each subsystem
+    \node[annotation, below=8mm of col.south] (mcol)
+        {Haptic device and\\acquisition software};
+    \node[annotation, below=8mm of proc.south] (mproc)
+        {Optimisation-based\\extraction};
+    \node[annotation, below=8mm of gen.south] (mgen)
+        {Generative\\neural network};
+
+    \draw[control] (mcol) -- (col.south);
+    \draw[control] (mproc) -- (proc.south);
+    \draw[control] (mgen) -- (gen.south);
+\end{tikzpicture}%

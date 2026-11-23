@@ -1,0 +1,54 @@
+\begin{tikzpicture}[
+        node distance = 6mm and 19mm,
+        stage/.style = {draw, thick, rounded corners=2pt, fill=gray!10,
+            minimum width=24mm, minimum height=13mm, align=center, font=\small},
+        annotation/.style = {align=center, font=\small},
+        flow/.style = {-{Stealth[length=2.4mm]}, thick},
+        error/.style = {-{Stealth[length=2mm]}, dashed},
+        subsystem brace/.style = {decorate, decoration={brace, mirror, amplitude=4pt}},
+    ]
+        % Ordered sequence of stages shaping the data
+        \node[annotation] (input) {Human motor\\behaviour};
+        \node[stage, right=6mm of input] (design) {Experimental\\design};
+        \node[stage, right=of design] (acq) {Acquisition};
+        \node[stage, right=of acq] (ext) {Feature\\extraction};
+        \node[stage, right=of ext] (gen) {Generation};
+        \node[annotation, right=6mm of gen] (output) {Synthetic\\motion};
+
+        \draw[flow] (input) -- (design);
+        \draw[flow] (design) -- node[annotation, above] {Elicited\\motion} (acq);
+        \draw[flow] (acq) -- node[annotation, above] {Measured\\motion} (ext);
+        \draw[flow] (ext) -- node[annotation, above] {Motion\\features} (gen);
+        \draw[flow] (gen) -- (output);
+
+        % Sources of error specific to each stage
+        \node[annotation, above=8mm of design.north] (ebias) {Bias};
+        \node[annotation, above=8mm of {$(acq.north)+(-5mm,0)$}] (emeas)
+            {Measurement\\error};
+        \node[annotation, above=8mm of {$(ext.north)+(-5mm,0)$}] (erec)
+            {Reconstruction\\error};
+        \node[annotation, above=8mm of {$(gen.north)+(-5mm,0)$}] (emodel)
+            {Model\\error};
+
+        \draw[error] (ebias) -- (design.north);
+        \draw[error] (emeas) -- (emeas |- acq.north);
+        \draw[error] (erec) -- (erec |- ext.north);
+        \draw[error] (emodel) -- (emodel |- gen.north);
+
+        % Software faults affect every stage implemented in software
+        %\node[annotation, above=25mm of ext.north] (bugs) {Software faults (bugs)};
+        %\draw[error] (bugs.west) -| ($(acq.north)+(9mm,0)$);
+        %\draw[error] ($(bugs.south -| ext.north)+(9mm,0)$) -- ($(ext.north)+(9mm,0)$);
+        %\draw[error] (bugs.east) -| ($(gen.north)+(9mm,0)$);
+
+        % Subsystem in charge of each group of stages
+        \draw[subsystem brace] ($(design.south west)+(0,-3mm)$)
+            -- ($(acq.south east)+(0,-3mm)$)
+            node[annotation, midway, below=6pt] {Data collection system};
+        \draw[subsystem brace] ($(ext.south west)+(0,-3mm)$)
+            -- ($(ext.south east)+(0,-3mm)$)
+            node[annotation, midway, below=6pt] {Data processing\\system};
+        \draw[subsystem brace] ($(gen.south west)+(0,-3mm)$)
+            -- ($(gen.south east)+(0,-3mm)$)
+            node[annotation, midway, below=6pt] {Data generation\\system};
+\end{tikzpicture}%

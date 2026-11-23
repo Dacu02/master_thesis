@@ -1,0 +1,126 @@
+% List of symbols, read by thesis.tex in the preamble.
+%   \defsymbol[unit]{key}{template}[name in the list]{description}
+% Write \sym{key} in the text or in a formula to print the symbol with a link to its row of the list; only the symbols
+% used at least once appear in the list, in the order in which they are defined here.
+% Subscripts and superscripts go right after the key and stay inside the link: \sym{sigma}_k^2, \sym{bezier}_i^{\prime}.
+% In the template, \symsub is "_{index}" when a subscript is given (\mu\symsub: \sym{mu}_i is \mu_i), while \symsep and
+% \symidx add the index to a subscript of the symbol itself (\lambda_{s\symsep\symidx}: \sym{lams}_i is \lambda_{s,i}).
+% Changing a template changes the symbol everywhere; every key is one meaning. The only letters left with two meanings
+% are p (distribution and position), q (density q_theta and waypoints q_j), f (state update f_theta and waypoint frame)
+% and C (continuity class C^0 and Cholesky factors), which the context and the subscripts tell apart.
+% Chapter 4 does not use this list yet.
+
+% ------------------------------------------------------------------ kinematic model
+\defsymbol[s]{t}{t\symsub}{time; $t_n$ is the timestamp of sample $n$}
+\defsymbol[s]{tzero}{t_{0\symsub}}{onset time of a stroke}
+\defsymbol{mu}{\mu\symsub}{log-time delay of a stroke}
+\defsymbol{sigma}{\sigma\symsub}{log-response time of a stroke}
+\defsymbol[m]{amplitude}{D\symsub}{amplitude of a stroke, the length of the path it describes}
+\defsymbol[s$^{-1}$]{lognormal}{\Lambda\symsub}{lognormal speed profile of unit area}
+\defsymbol[m/s]{velocity}{\vec v\symsub}{velocity of the end effector; $\vec v_n$ is the measured velocity of sample $n$}
+\defsymbol{nsegments}{M}{number of strokes of a movement; in a recording, the number of kept strokes (segments)}
+
+% ------------------------------------------------------------------ Bézier model
+\defsymbol[m]{bezier}{B\symsub}{cubic Bézier curve; $B_i$ is the curve of segment $i$}
+\defsymbol[m]{ctrlpt}{P\symsub}[P_0,\dots,P_3]{control points of a Bézier curve: $P_0$ and $P_3$ are its end points, $P_1$ and $P_2$ its inner control points; $P_{j,i}$ belongs to segment $i$}
+\defsymbol{curvepar}{s}{parameter of a Bézier curve, in $[0,1]$}
+\defsymbol{czero}{C^0}{continuity of a spline: consecutive curves share their end points}
+\defsymbol{gone}{G^1}{geometric continuity of a spline: consecutive curves also share their tangent direction}
+\defsymbol{gratio}{\kappa\symsub}{ratio between the tangent vectors of segments $i$ and $i+1$ at their junction}
+\defsymbol{direction}{u\symsub}{unit tangent direction at a node of the chain}
+\defsymbol{direstimate}{\hat u\symsub}{finite-difference estimate of a tangent direction}
+\defsymbol[rad]{rotation}{\alpha\symsub}{rotation of a tangent direction from its estimate}
+\defsymbol{rotbasis}{o\symsub}[(o_{j,1},o_{j,2})]{orthonormal basis of the plane orthogonal to $\hat u_j$}
+\defsymbol[m]{lams}{\lambda_{s\symsep\symidx}}{start tangent length of a segment}
+\defsymbol[m]{lame}{\lambda_{e\symsep\symidx}}{end tangent length of a segment}
+\defsymbol[m]{arclength}{L\symsub}{arc length of a segment}
+\defsymbol{normarc}{\ell\symsub}{normalised arc length along a Bézier curve}
+\defsymbol{dataarc}{\xi\symsub}{normalised arc length of a recorded sample within its segment}
+
+% ------------------------------------------------------------------ data and extraction
+\defsymbol{nsamples}{N}{number of samples of a recording}
+\defsymbol[m]{position}{p\symsub}{measured position; $p_n$ is the position of sample $n$}
+\defsymbol[s]{samplingint}{\Delta t}{sampling interval}
+\defsymbol{minimum}{n\symsub}{sample index of a speed minimum}
+\defsymbol{nwindows}{M_0}{number of windows between the speed minima of a recording, before the strokes are filtered}
+\defsymbol{window}{\mathcal W\symsub}{window of the samples of a stroke}
+\defsymbol[s]{dtb}{\Delta t_b}{minimum time between two speed minima}
+\defsymbol[m/s]{vb}{v_b}{minimum prominence of a speed minimum}
+\defsymbol[m/s]{residual}{r\symsub}[r^{(k)}]{residual speed before the fit of stroke $k$}
+\defsymbol{mumin}{\mu_{\min}}{lower bound of $\mu$ in the lognormal fit}
+\defsymbol{mumax}{\mu_{\max}}{upper bound of $\mu$ in the lognormal fit}
+\defsymbol{sigmamin}{\sigma_{\min}}{lower bound of $\sigma$ in the lognormal fit}
+\defsymbol{sigmamax}{\sigma_{\max}}{upper bound of $\sigma$ in the lognormal fit}
+\defsymbol[m/s]{vpeak}{v^{\mathrm{peak}}\symsub}{peak speed of a stroke}
+\defsymbol[m/s]{vmin}{v_{\min}}{peak-speed threshold of the kept strokes}
+\defsymbol[m]{displacement}{\Delta p\symsub}{displacement of a stroke, from its start point to its end point}
+\defsymbol[m]{lammin}{\lambda_{\min}}{lower bound of the tangent lengths}
+\defsymbol[m]{lammax}{\lambda_{\max\symsep\symidx}}[\lambda_{\max,i}]{upper bound of the tangent lengths of segment $i$}
+\defsymbol[rad]{alphamax}{\alpha_{\max}}{largest rotation of a tangent direction}
+\defsymbol[s]{tpeakwin}{\hat t}{time of the largest residual speed in the window of a stroke}
+\defsymbol{onsetfactor}{\gamma}{onset factor of a starting point of the lognormal fit}
+\defsymbol{ssigma}{\mathcal S_\sigma}{starting values of $\sigma$ of the lognormal fit}
+\defsymbol{sonset}{\mathcal S_\gamma}{onset factors of the starting points of the lognormal fit}
+\defsymbol{ngl}{n_{\mathrm{GL}}}{nodes of the Gauss--Legendre quadrature}
+\defsymbol{nell}{n_\ell}{grid values of the curve parameter used to invert $\ell_i$}
+\defsymbol{epsl}{\varepsilon_L}{relative tolerance on the length constraint}
+
+% ------------------------------------------------------------------ generative models
+\defsymbol{obs}{x\symsub}{observation; $x_t$ is element $t$ of a sequence, and $x_i$ the output features of stroke $i$}
+\defsymbol{obsspace}{\mathcal X}{space of the observations}
+\defsymbol{dimension}{d}{dimension of an observation; for the network, the number of output dimensions}
+\defsymbol{condition}{y}{condition of a generative model}
+\defsymbol{condspace}{\mathcal Y}{space of the conditions}
+\defsymbol{pdata}{p_{\mathrm{data}}}{distribution of the data}
+\defsymbol{pdist}{p}{probability distribution, or its density}
+\defsymbol{pmodel}{p_\theta}{distribution defined by a model with parameters $\theta$}
+\defsymbol{family}{\mathcal P_\Theta}{parametric family of distributions}
+\defsymbol{decisionfn}{F_\theta}{decision function of a discriminative model}
+\defsymbol{modelparams}{\theta}{parameters of a model}
+\defsymbol{paramspace}{\Theta}{space of the parameters of a model}
+\defsymbol{divergence}{\mathcal D}{divergence between two distributions}
+\defsymbol{seqlen}{T}{length of a sequence}
+\defsymbol{condstep}{\phi\symsub}{part of the condition relevant to step $t$; $\phi_i$ are the conditioning inputs of stroke $i$}
+\defsymbol{markovorder}{J}{order of a Markov chain}
+\defsymbol{state}{h\symsub}{state of a recurrent model; $h_i$ is the hidden state of the LSTM at stroke $i$}
+\defsymbol{statefn}{f_\theta}{state update of a recurrent model}
+\defsymbol{qtheta}{q_\theta}{conditional density of one step of an autoregressive model, here a Gaussian mixture}
+\defsymbol{ncomp}{K}{number of components of a Gaussian mixture}
+\defsymbol{mixweight}{\pi\symsub}{weight of a mixture component}
+\defsymbol{mixmean}{m\symsub}{mean of a mixture component}
+\defsymbol{mixchol}{C\symsub}{lower-triangular (Cholesky) factor of the covariance of a mixture component}
+\defsymbol{covariance}{\Sigma\symsub}{covariance of a mixture component}
+\defsymbol{gaussian}{\mathcal N}{Gaussian (normal) density}
+
+% ------------------------------------------------------------------ features of the network
+\defsymbol[m]{waypoint}{q\symsub}{waypoint of a task}
+\defsymbol[m]{wpvec}{w\symsub}{vector from the start of a stroke to the waypoint it aims at}
+\defsymbol[m]{wpnext}{w'\symsub}{vector from the start of a stroke to the following waypoint}
+\defsymbol{refnormal}{\nu\symsub}{unit normal of the reference plane of a stroke}
+\defsymbol{wpframe}{f\symsub}[(f_1,f_2,f_3)]{waypoint frame, $f_1$ along $w_i$}
+\defsymbol{strokeframe}{e\symsub}[(e_1,e_2,e_3)]{stroke frame, $e_1$ along the chord $\Delta p_i$}
+\defsymbol{chorddir}{\hat d\symsub}{unit direction of the chord of a stroke}
+\defsymbol[s]{tpeak}{t^{\mathrm{peak}}\symsub}{time of the speed peak of a stroke}
+\defsymbol{peakdelay}{\tau\symsub}{log of the delay between the speed peaks of two consecutive strokes, relative to $e^{\mu_{i-1}}$}
+\defsymbol{extent}{\rho\symsub}{log of the length of the chord relative to the waypoint vector}
+\defsymbol[rad]{azimuth}{\psi\symsub}{direction of the chord within the reference plane}
+\defsymbol[rad]{elevation}{\beta\symsub}{direction of the chord out of the reference plane}
+\defsymbol{handle}{\eta\symsub}{tangent handle in the stroke frame, relative to the chord and compressed by $\operatorname{asinh}$}
+\defsymbol{handlescale}{\lambda_\eta}{scale of the inverse hyperbolic sine of the handles, relative to the chord}
+\defsymbol[s]{tfirst}{t_0^{\mathrm{first}}}{onset of the first stroke of a generated sequence}
+
+% ------------------------------------------------------------------ network and training
+\defsymbol{previn}{\tilde x\symsub}{previous-stroke inputs: the features of stroke $i-1$ given to the LSTM at stroke $i$}
+\defsymbol{lstmin}{z\symsub}{input of the LSTM at a stroke}
+\defsymbol{cellstate}{c\symsub}{cell state of the LSTM}
+\defsymbol{trunkout}{g\symsub}{output of the trunk layer}
+\defsymbol{headhidden}{a\symsub}{output of the hidden layer of the head}
+\defsymbol{weights}{W\symsub}{weight matrix of a layer}
+\defsymbol{bias}{b\symsub}{bias vector of a layer}
+\defsymbol{rawfactor}{\tilde C\symsub}{free entries of a Cholesky factor, as computed by the head}
+\defsymbol{diagfloor}{\delta}{lower bound of the diagonal of the Cholesky factors}
+\defsymbol{determinism}{\omega}{determinism of the sampling, in $[0,1]$}
+\defsymbol{stdnoise}{\zeta}{standard normal vector used to sample a mixture component}
+\defsymbol{loss}{\mathcal L}{training loss, the mean negative log-likelihood per stroke}
+\defsymbol{nbatch}{N_b}{number of strokes of a batch}
+\defsymbol{dimset}{S\symsub}{output dimensions that exist for a stroke}

@@ -1,0 +1,93 @@
+%% Creator: Inkscape 1.4.3 (0d15f75, 2025-12-25), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'fsm_diagram_svg-tex.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{433.43751526bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.55900785)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.21781687,0.49557838){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}SELECT_EXPERIMENT\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.78480168,0.49557838){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}TRAINING\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.4928738,0.02665266){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}RECORDING\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.7440173,0.26111552){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}NEXT_WAYPOINT\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.06694736,0.54191724){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Controller\end{tabular}}}}%
+    \put(0.10453929,0.5157318){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Init\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.51621625,0.51596194){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Pressed training key\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.53525014,0.47616381){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Pressed stop key\end{tabular}}}}%
+    \put(0.57141974,0.44997838){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}or finished\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.21297705,0.28755532){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Pressed\end{tabular}}}}%
+    \put(0.2033165,0.26136987){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}recording\end{tabular}}}}%
+    \put(0.23699265,0.23518618){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}key\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.54242592,0.28755532){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Pressed save\end{tabular}}}}%
+    \put(0.56039048,0.26136987){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}or discard\end{tabular}}}}%
+    \put(0.53900503,0.23518618){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}recording key\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.77087236,0.39483721){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Reach\end{tabular}}}}%
+    \put(0.78069732,0.36865178){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}next\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.85046861,0.38185956){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Next reached\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.81586154,0.15431812){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Reach\end{tabular}}}}%
+    \put(0.82460503,0.12813269){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}start\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=13]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.60994951,0.14134047){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Start reached\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=14]{fsm_diagram_svg-tex.pdf}}%
+    \put(0.34347511,0.38185956){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Interrupted\end{tabular}}}}%
+  \end{picture}%
+\endgroup%

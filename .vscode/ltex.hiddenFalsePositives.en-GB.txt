@@ -2,3 +2,4 @@
 {"rule":"MORFOLOGIK_RULE_EN_GB","sentence":"^\\QDavide D'Acunto.\\E$"}
 {"rule":"MORFOLOGIK_RULE_EN_GB","sentence":"^\\QSupervisors: Prof. Angelo Marcelli Prof. Pasquale Chiacchio\\E$"}
 {"rule":"UPPERCASE_SENTENCE_START","sentence":"^\\Q'mt.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_GB","sentence":"^\\QThe sigma-lognormal model hypothesises that The time delay Data Generation System.\\E$"}

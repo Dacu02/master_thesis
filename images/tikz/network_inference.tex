@@ -1,0 +1,72 @@
+% Autoregressive inference of the stroke generation network, unrolled over the strokes.
+% Requires \usetikzlibrary{arrows.meta, calc}; coordinates are in millimetres.
+\begin{tikzpicture}[
+        x=1mm, y=1mm,
+        stage/.style = {draw, thick, rounded corners=2pt, fill=gray!10,
+            minimum width=20mm, minimum height=10mm, align=center, font=\small},
+        ghost/.style = {stage, dashed, fill=none},
+        annotation/.style = {align=center, font=\small},
+        flow/.style = {-{Stealth[length=2.4mm]}, thick},
+        ghost flow/.style = {flow, dashed},
+        % White halo that makes a line pass over the lines it crosses
+        bridge/.style = {preaction={draw, white, line width=4pt, -,
+            shorten <=1mm, shorten >=1mm}},
+    ]
+    % Processing chain of one stroke, repeated for every column
+    \foreach \c/\x in {0/0, 1/36, 3/108} {
+        \node[stage] (feat\c) at (\x,0)  {Features};
+        \node[stage] (lstm\c) at (\x,15) {LSTM};
+        \node[stage] (mdn\c)  at (\x,30) {Trunk\\+ MDN};
+        \node[stage] (samp\c) at (\x,45) {Sampling\\($d$)};
+        \node[stage] (reb\c)  at (\x,60) {Rebuild};
+        \node[stage] (bez\c)  at (\x,75) {B\'ezier\\length};
+        \draw[flow] (feat\c) -- (lstm\c);
+        \draw[flow] (lstm\c) -- (mdn\c);
+        \draw[flow] (mdn\c)  -- (samp\c);
+        \draw[flow] (samp\c) -- (reb\c);
+        \draw[flow] (reb\c)  -- (bez\c);
+    }
+
+    % Intermediate strokes, from the third to the second to last
+    \foreach \n/\y in {feat/0, lstm/15, mdn/30, samp/45, reb/60, bez/75}
+        \node[ghost] (\n2) at (72,\y) {\phantom{Trunk}\\\phantom{MDN}};
+    \foreach \a/\b in {feat/lstm, lstm/mdn, mdn/samp, samp/reb, reb/bez}
+        \draw[ghost flow] (\a2) -- (\b2);
+
+    % Waypoints targeted by each stroke
+    \node[annotation] (w0) at (0,-13)   {$W_1, W_2$};
+    \node[annotation] (w1) at (36,-13)  {$W_2, W_3$};
+    \node[annotation] (w3) at (108,-13) {$W_n, W_{n+1}$};
+    \draw[flow] (w0) -- (feat0);
+    \draw[flow] (w1) -- (feat1);
+    \draw[ghost flow] (72,-13) -- (feat2);
+    \draw[flow] (w3) -- (feat3);
+
+    % Stroke parameters fed back to the features of the next stroke
+    \draw[flow] (reb0.east) -| ($(feat1.west)+(-3mm,0)$)
+        node[annotation, pos=0.25, above] {$\boldsymbol{\theta}_0$} -- (feat1.west);
+    \draw[ghost flow] (reb1.east) -| ($(feat2.west)+(-3mm,0)$)
+        node[annotation, pos=0.25, above] {$\boldsymbol{\theta}_1$} -- (feat2.west);
+    \draw[ghost flow] (reb2.east) -| ($(feat3.west)+(-3mm,0)$)
+        node[annotation, pos=0.25, above] {$\boldsymbol{\theta}_{n-2}$} -- (feat3.west);
+
+    % LSTM state carried from one stroke to the next
+    \draw[flow, bridge] (lstm0) -- node[annotation, above] {$\mathbf{s}_0$} (lstm1);
+    \draw[ghost flow, bridge] (lstm1) -- node[annotation, above] {$\mathbf{s}_1$} (lstm2);
+    \draw[ghost flow, bridge] (lstm2) -- node[annotation, above] {$\mathbf{s}_{n-2}$} (lstm3);
+
+    % Superposition of the strokes and arc-length mapping onto the Bezier path
+    \node[stage, minimum width=12mm, minimum height=12mm, font=\large] (sigma) at (54,95) {$\Sigma$};
+    \draw[flow] (bez0.north) |- ([yshift=2.5mm]sigma.west)
+        node[annotation, pos=0.25, right] {$\boldsymbol{\theta}_0, D_0$};
+    \draw[flow] (bez1.north) |- ([yshift=-2.5mm]sigma.west)
+        node[annotation, pos=0.25, right] {$\boldsymbol{\theta}_1, D_1$};
+    \draw[ghost flow] (bez2.north) |- ([yshift=-2.5mm]sigma.east);
+    \draw[flow] (bez3.north) |- ([yshift=2.5mm]sigma.east)
+        node[annotation, pos=0.25, right] {$\boldsymbol{\theta}_{n-1}, D_{n-1}$};
+
+    \node[stage] (map) at (54,114) {Arc-length\\mapping};
+    \node[annotation] (out) at (54,128) {Generated\\trajectory};
+    \draw[flow] (sigma) -- node[annotation, right] {$S(t) = \sum_k D_k\,\Phi_k(t)$} (map);
+    \draw[flow] (map) -- (out);
+\end{tikzpicture}%

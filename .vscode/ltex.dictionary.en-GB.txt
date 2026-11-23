@@ -1,3 +1,9 @@
 efference
 spatiotemporal
 lognormal
+Sigma-Lognormal
+subproblem
+subproblems
+DOFs
+polyline
+Chebyshev

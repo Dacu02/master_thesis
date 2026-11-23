@@ -19,10 +19,15 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{svg}
 \usepackage{csquotes}
 \usepackage[british]{babel}
+\usepackage{tikz}
+\usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc, decorations.pathreplacing, arrows.meta}
 
 \usepackage{mathptmx}
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
+
 
 \usepackage{algorithm} % Pseudocodice
 \usepackage{algpseudocode} % Pseudocodice
@@ -80,6 +85,49 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{enumitem}
+
+% ---- List of symbols (appendix). Define a symbol in symbols.tex with
+%      \defsymbol[unit]{key}{template}[name in the list]{description}
+% and write \sym{key} in the text or in a formula: it prints the symbol, links it to its row of the list and adds the
+% row to the list (only the symbols used at least once are listed). \sym*{key} prints the symbol without the link.
+% Subscripts and superscripts written right after \sym{key} go inside the link: \sym{sigma}_k^2. In the template,
+% \symsub is "_{index}" when a subscript is given (\mu\symsub), \symsep and \symidx are "," and the index, to add it to
+% a subscript of the symbol itself (\lambda_{s\symsep\symidx} gives \lambda_{s,i} for \sym{lams}_i).
+% No external tool is needed (\makenoidxglossaries): two LaTeX runs update the list.
+\usepackage[symbols,nomain,nonumberlist,nopostdot,numberedsection=autolabel]{glossaries}
+\makenoidxglossaries
+\glsnoexpandfields
+\newglossarystyle{symboltable}{%
+    \setglossarystyle{long}%
+    \renewenvironment{theglossary}%
+        {\begin{longtable}{@{}p{0.16\linewidth}p{0.66\linewidth}p{0.12\linewidth}@{}}
+            \toprule\textbf{Symbol} & \textbf{Description} & \textbf{Unit}\\\midrule\endhead
+            \bottomrule\endfoot}%
+        {\end{longtable}}%
+    \renewcommand*{\glossaryheader}{}%
+    \renewcommand*{\glsgroupheading}[1]{}%
+    \renewcommand*{\glsgroupskip}{}%
+    \renewcommand*{\glossentry}[2]{%
+        \glsentryitem{##1}\glstarget{##1}{\glossentryname{##1}} & \glossentrydesc{##1} & \glsentryuseri{##1}\tabularnewline}%
+    \renewcommand*{\subglossentry}[3]{\glossentry{##2}{##3}}%
+}
+\newcommand*{\symidx}{}\newcommand*{\symsep}{}\newcommand*{\symsub}{}\newcommand*{\symsup}{}
+\NewDocumentCommand{\defsymbol}{O{} m m O{} m}{%
+    \expandafter\def\csname symtpl@#2\endcsname{#3}%
+    \ifblank{#4}%
+        {\newglossaryentry{#2}{type=symbols, name={\ensuremath{\csname symtpl@#2\endcsname}}, sort={#2}, description={#5}, user1={#1}}}%
+        {\newglossaryentry{#2}{type=symbols, name={\ensuremath{#4}}, sort={#2}, description={#5}, user1={#1}}}}
+\NewDocumentCommand{\sym}{s m e{_^}}{%
+    \begingroup
+    \def\symidx{}\def\symsep{}\def\symsub{}\def\symsup{}%
+    \IfNoValueF{#3}{\def\symidx{#3}\def\symsep{,}\def\symsub{_{#3}}}%
+    \IfNoValueF{#4}{\def\symsup{^{#4}}}%
+    \IfBooleanTF{#1}%
+        {\glsdisp[hyper=false]{#2}{\ensuremath{\csname symtpl@#2\endcsname\symsup}}}%
+        {\glsdisp{#2}{\ensuremath{\csname symtpl@#2\endcsname\symsup}}}%
+    \endgroup}
+\setglossarypreamble[symbols]{Every symbol listed here is a link in the text and in the formulas that leads to its row. The symbols are listed in the order of the parts of the work in which they are introduced.}
+\input{symbols}
 
 \hypersetup{
 	colorlinks=true,
@@ -243,28 +291,36 @@ Beyond human--robot interaction, models of human motion support the design of ha
 
 This work has its roots in neuroscience, and adopts as its theoretical foundation the Kinematic Theory of rapid human movements~\cite{plamondon1995a,plamondon1995b}, in which a movement is described as the superimposition of elementary strokes, each with a lognormal velocity profile. The theory has been applied mostly to planar handwriting and signatures; showing that it can describe, and generate, movements in three-dimensional space extends its scope and may support future research on human motor control.
 
-Human movements were recorded through an experimental campaign in which subjects moved the stylus of a haptic device through sequences of target points displayed on a screen, while the device attracted them towards each point without imposing the path. The velocity profile of each recording was decomposed into lognormal strokes, and the path of each stroke was described by a cubic Bézier segment, so that consecutive strokes form a continuous trajectory. Drawing the stroke parameters at random would not produce human-like movements, since the parameters are related to each other and to the task. A generative model was therefore trained on the extracted parameters to learn their distribution, conditioned on the target points, and to produce new movements from the same elementary units.
+Human movements were recorded through an experimental campaign in which subjects moved the stylus of a haptic device through sequences of target points, called waypoints. The sequences were first learned with the help of the device and then executed from memory, so that the recordings capture well-practised movements rather than visually aided ones. The velocity profile of each recording was decomposed into lognormal strokes, and the path of each stroke was described by a cubic Bézier segment, so that consecutive strokes form a continuous trajectory. Since the stroke parameters are related to each other and to the task, drawing them at random, or by their average values, would not produce human-like movements: a generative model was therefore trained on the extracted parameters to learn their distribution, conditioned on the target points, and to produce new movements from the same elementary units.
 
 The contributions of this work are:
 \begin{itemize}
   \item an experimental protocol and acquisition pipeline for recording three-dimensional movements through a haptic device;
-  \item a representation of these movements as lognormal strokes in time and Bézier segments in space;
+  \item an extraction method that represents these movements as lognormal strokes in time and Bézier segments in space;
   \item a generative model that produces new human-like movements from this representation;
   \item a set of metrics to evaluate the human-likeness of the generated movements.
 \end{itemize}
 
 The remainder of this chapter defines the problem and discusses its relevance to computer engineering. Chapter~2 reviews the state of the art in human--robot interaction, neuroscience and the kinematics of human movement, which motivates the choices made in this work. Chapter~3 describes the proposed solution, its implementation and the reasons behind each choice. Chapter~4 presents the experimental validation, including the task design, the evaluation metrics, the experimental protocol and the results. Finally, Chapter~5 summarises the contributions and discusses future research.
 
+\section{Problem Definition}
+The problem addressed in this work is the generation of human-like movements in three-dimensional space. Given an ordered sequence of target points, the goal is to produce end-effector trajectories that traverse the targets and share the features of human movements performing the same task, so that neither an observer nor a quantitative metric could discriminate between generated and recorded ones. The overall problem can be decomposed into four subproblems.
+
+First, an acquisition subproblem: recording three-dimensional human movements with sufficient spatial and temporal fidelity to preserve their features. The errors of the measurement device must be considerably smaller than the scale of the recorded movements, and the noise introduced by its hardware has to be filtered out. Bias must also be avoided, by fixing in an experimental protocol the posture of the subject, the position of the device relative to the subject and the task itself. In particular, the task has to be presented to the subjects unambiguously and, at the same time, specified in a machine-readable form, since the same description later conditions the generative model.
+
+Second, a representation subproblem: describing the recorded movements with a compact set of parameters, grounded in the Kinematic Theory, such that similar movements are described by similar parameters. The representation reduces the information needed to express a trajectory, so that the generative model operates on meaningful features of the movement rather than on raw samples. This reduction comes at the cost of a loss of information, which has to be quantified by a reconstruction metric.
+
+Third, a generation subproblem: learning the distribution of these parameters, conditioned on the target points, and sampling new movements from it. To replicate the behaviour of the subjects, the model has to receive the same information about the task that they received.
+
+Fourth, an evaluation subproblem: measuring the human-likeness of the generated movements. Human movement is variable, so the same sequence of target points admits many valid executions and no single ground truth exists for a generated movement: it cannot be compared with one reference recording, but only with the distribution of the recorded ones.
+
 \section{Problem Relevance in Computer Engineering}
-As stated in the previous section, each task addressed in this project requires the application of knowledge and methodologies from the field of computer engineering. This involves identifying an appropriate theoretical model and translating it into a practical implementation through the application of established software design patterns. It also entails characterizing and understanding the specifications of a data acquisition device, as well as interfacing with its driver, given that the device itself is an electronic component.
-
-Furthermore, the implementation of a generative neural network requires defining its architecture, selecting an appropriate loss function, and identifying the most effective representations of its inputs and outputs to optimize its performance. These activities collectively constitute fundamental aspects of artificial intelligence engineering.
-
+Each of the subproblems defined above requires knowledge and methodologies from computer engineering. The acquisition subproblem involves characterising the specifications of a haptic device, interfacing with its driver and building a pipeline that records kinematic data with reliable timing. The representation subproblem requires selecting a theoretical model, translating it into algorithms and implementing them as software modules that can be tested and replaced independently. The generation subproblem is an exercise in artificial intelligence engineering: the architecture of the network, its loss function and the representation of its inputs and outputs have to be designed so that the model captures the distribution of the stroke parameters. Finally, the evaluation subproblem requires the definition of quantitative metrics, since the quality of a generated movement cannot be assessed by inspection alone.
 
 %==============================================================================
 % 2. State of the Art
 %==============================================================================
-\chapter{State of the Art}
+\chapter{State of the Art}\label{ch:sota}
 The following section discusses the current advancements in human-robot interaction, and the limitations of the current literature. The goal is to provide the reader with a comprehensive overview of the state of the art in this field, highlighting challenges and opportunities for future research.
 
 \section{Current Research}
@@ -286,16 +342,18 @@ Human-like robot motion has been generated in several ways, from minimum-jerk in
 Most knowledge on human kinematics and haptic communication stems from neuroscience. A voluntary movement originates from an intention rather than from an external stimulus~\cite[p.~816]{scott2021}. Its goal is probably set by the prefrontal cortex, the plan that realises it emerges from the interaction between the posterior parietal and the premotor cortices, and its execution is left to the primary motor cortex, the brainstem and the spinal cord~\cite[p.~710]{kandel2021}. Although this hierarchy is useful to describe the process, many of these stages operate in parallel~\cite[p.~710]{kandel2021}.
 
 \paragraph{State estimation}
-To plan a movement, the brain needs to know where the target is and where the limb is. Both estimates converge in the posterior parietal cortex, which identifies the targets of the action and estimates the state of the body~\cite[p.~857]{scott2021}. Visual information reaches the primary visual cortex V1 through the lateral geniculate nucleus of the thalamus. From V1, the dorsal stream, devoted to the visual guidance of movement, like reaching movements, arrives to both the middle temporal area (MT/V5), specialized in visual motion, and area V6, sensitive to the optic flow generated by self-motion~\cite{pitzalis2013}, before converging on the posterior parietal cortex~\cite[p.~505]{gilbertdas2021}.
+To plan a movement, the brain needs to know where the target is and where the limb is. Both estimates converge in the posterior parietal cortex, which identifies the targets of the action and estimates the state of the body~\cite[p.~857]{scott2021}. Visual information reaches the primary visual cortex V1 through the lateral geniculate nucleus of the thalamus~\cite[p.~502]{gilbertdas2021}. From V1, the dorsal stream, devoted to the visual guidance of movements such as reaching, reaches both the middle temporal area (MT/V5), specialised in visual motion, and area V6, sensitive to the optic flow generated by self-motion~\cite{pitzalis2013}, before converging on the posterior parietal cortex~\cite[p.~505]{gilbertdas2021}.
 
-Proprioception, the sense of the position and movement of the limbs, arises from muscle spindles, which signal muscle length and its rate of change, and from Golgi tendon organs, which signal muscle force~\cite[p.~421]{gardner2021}. These signals ascend through the spinal cord, cross to the opposite side in the brainstem and, after a relay in the thalamus, reach the primary somatosensory cortex, which passes them on to the posterior parietal cortex~\cite[pp.~450--452, 458]{gardner2021touch}. The perceived joint angle combines these afferents with the efferent motor command, so proprioception also reflects what the brain itself is commanding~\cite[p.~421]{gardner2021}. 
 
-Vision and proprioception are fused, each weighted by its reliability: vision is more accurate in the horizontal direction, proprioception in depth~\cite[p.~720]{wolpert2021}. For this reason, the position of the limb can be estimated even when it is not in view. Since sensory signals arrive with a delay, the estimate is completed by a forward model that predicts the consequences of the current motor command from its efference copy~\cite[pp.~721--722]{wolpert2021}.
+Proprioception, the sense of the position and movement of the limbs, arises from muscle spindles, which signal muscle length and its rate of change, and from Golgi tendon organs, which signal muscle force~\cite[p.~421]{gardner2021}. These signals ascend through the spinal cord, cross to the opposite side in the brainstem and, after a relay in the thalamus, reach the primary somatosensory cortex, which passes them on to the posterior parietal cortex~\cite[pp.~450--452, 458]{gardner2021touch}. The perceived joint angle combines these afferents with the efferent motor command, so proprioception also reflects what the brain itself is commanding~\cite[pp.~421--422]{gardner2021}.
+
+Proprioception allows the position of the limb to be estimated even when it is not in view. When both are available, vision and proprioception are fused, each weighted by its reliability: vision is more accurate along the azimuth (right--left), proprioception in depth~\cite[p.~720]{wolpert2021}.
+
 
 \paragraph{Motor plan}
 The estimates of target and body state are passed to the premotor areas, which select the action and specify the spatiotemporal features of the movement~\cite[p.~710]{kandel2021}. The dorsal premotor cortex plans arm movements towards the target, the ventral premotor cortex shapes the hand for grasping, and the supplementary motor area is involved in self-initiated actions and in sequences of movements~\cite[pp.~829--830, 857]{scott2021}. The choice among competing actions is resolved by the basal ganglia, whose tonic inhibition is selectively released on the channel of the selected action~\cite[p.~940]{redgrave2021}.
 
-Planning and execution are separable in time. When a movement is instructed but delayed, premotor neurons already encode it, and their activity during the delay predicts errors before the movement starts~\cite[p.~821]{scott2021}. During this preparation, the population activity evolves in a subspace that does not drive the muscles, and moves into one that does at movement onset~\cite[p.~834]{scott2021}.
+Planning and execution are separable in time. When a movement is instructed but delayed, premotor neurons already encode it, and on trials in which the wrong movement is made, their activity during the delay predicts the erroneous response~\cite[p.~821]{scott2021}.
 
 The plan is expressed in task space rather than joint space: reaching movements follow nearly straight paths with smooth, bell-shaped velocity profiles that scale with distance, while the corresponding joint trajectories vary widely~\cite[pp.~725--726]{wolpert2021}. Similarly, a letter keeps its shape when written with different effectors, a property known as motor equivalence, which indicates that the plan is not tied to a specific set of muscles~\cite[pp.~726--727]{wolpert2021}. Among the infinite ways to reach a goal, the motor system appears to choose the one that minimizes a cost combining task success and effort~\cite[p.~727]{wolpert2021}.
 
@@ -305,7 +363,8 @@ Interaction through a haptic device is perceived mainly through touch and propri
 This distinction has direct consequences for physical interaction. When a load is self-generated, grip force rises with it without delay, whereas an externally imposed load is followed with a lag and a higher grip force~\cite[pp.~723--724]{wolpert2021}. Similarly, a delay introduced by a robotic interface between a movement and its tactile consequence prevents the prediction from cancelling the self-generated sensation~\cite[p.~723]{wolpert2021}. When external forces cannot be predicted, the limb is stiffened by co-contracting antagonist muscles~\cite[pp.~716, 730]{wolpert2021}. Skilled movement nevertheless remains largely predictive, so that the loss of touch makes it clumsy rather than impossible~\cite[p.~464]{gardner2021touch}.
 
 \paragraph{Online corrections}
-Sensory feedback can correct a movement only after a delay: spinal reflexes respond within about 25~ms, transcortical responses within 50--100~ms and voluntary corrections within about 110~ms~\cites[p.~716]{wolpert2021}[p.~852]{scott2021}, while a complete visuomotor loop takes 120--150~ms~\cite[p.~717]{wolpert2021}. The early part of a rapid movement is therefore executed in open loop, and corrections can be introduced only once the feedback arrives. Feedback with high gain and long delay makes control unstable and oscillatory~\cite[p.~720]{wolpert2021}; two strategies limit this problem: intermittency, in which the movement is interrupted by pauses longer than the loop delay, as in manual tracking, and prediction~\cite[p.~723]{wolpert2021}. Moreover, the motor system does not correct every deviation, but only those relevant to the task, according to the minimal intervention principle~\cite[pp.~728--729]{wolpert2021}. Since motor noise grows with the size of the command, more accurate movements must be executed more slowly~\cite[pp.~727--728]{wolpert2021}. Finally, novel movements rely more on feedback than well-learned ones~\cite[pp.~729--732]{wolpert2021}, so corrective adjustments are expected to be more frequent early in learning. Variability is therefore not uniform: it is reduced along task-relevant dimensions and left free along the others~\cite[pp.~728--729]{wolpert2021}.
+Sensory feedback can correct a movement only after a delay: spinal reflexes respond within about 25~ms, transcortical responses within 50--100~ms and voluntary corrections within about 110~ms~\cites[p.~716]{wolpert2021}[p.~852]{scott2021}, while a complete visuomotor loop takes 120--150~ms~\cite[p.~717]{wolpert2021}. The early part of a rapid movement is therefore executed in open loop, and corrections can be introduced only once the feedback arrives. Feedback with high gain and long delay makes control unstable and oscillatory~\cite[p.~720]{wolpert2021}; two strategies limit this problem: intermittency, in which the movement is interrupted by pauses longer than the loop delay, as in manual tracking, and prediction~\cite[p.~723]{wolpert2021}. Moreover, the motor system does not correct every deviation, but only those relevant to the task, according to the minimal intervention principle; variability is therefore not uniform, being reduced along task-relevant dimensions and left free along the others~\cite[pp.~728--729]{wolpert2021}. Since motor noise grows with the size of the command, more accurate movements must be executed more slowly~\cite[pp.~727--728]{wolpert2021}. Finally, corrective adjustments are expected to be more frequent early in learning, when movements rely more on feedback.
+
 
 \paragraph{Motor learning}
 How a movement is planned and executed depends on how well it is known. A novel movement relies on explicit strategies and on sensory feedback, whereas a well-learned movement is executed automatically through internal models, with feedback used mainly for adjustment~\cite[pp.~729--732]{wolpert2021}. Two subcortical structures drive this transition, each with a different learning signal. The basal ganglia learn by reinforcement: dopaminergic neurons signal whether the outcome of an action is better or worse than expected, modulating the probability and vigor of the actions that are selected~\cite[pp.~943--946]{redgrave2021}. With extended training, control shifts from goal-directed actions, sensitive to their outcome, to habits triggered by the context, which engage different territories of the striatum~\cite[p.~946]{redgrave2021}. The cerebellum instead learns from errors: climbing fibers signal the mismatch between the predicted and the actual movement, and the resulting synaptic changes gradually suppress the incorrect commands until the error disappears~\cite[pp.~924--925]{bastian2021}.
@@ -314,13 +373,13 @@ Building on these mechanisms and on motor equivalence, Senatore~\cite{senatore20
 
 Learning where the target points lie involves several systems. Over a period of seconds, neurons in the dorsolateral prefrontal cortex maintain spatial representations, while the rehearsal of the location of objects involves the modulation of parietal, temporal and occipital areas by the frontal and premotor cortices~\cite[p.~1292]{shohamy2021}. During reaching, posterior parietal areas encode the target relative to the gaze and to the hand, and keep it active while the movement is delayed~\cite[pp.~825, 827]{scott2021}. When targets are presented on a display rather than in the workspace, an arbitrary mapping between visual and motor space has to be learned, an ability impaired by lesions of the dorsal premotor cortex~\cite[p.~829]{scott2021}. Furthermore, a flat display removes binocular disparity, one of the cues used to perceive depth~\cite[pp.~550--552]{gilbert2021}, and depth is already the direction in which vision is less reliable than proprioception~\cite[p.~720]{wolpert2021}.
 
-Prior motor experience shifts this balance even for movements that have never been performed. A new behaviour is learned easily when it can be approximated by combining existing motor primitives~\cite[p.~734]{wolpert2021}, and practice with a variety of tasks sharing the same structure facilitates the learning of new tasks with that structure, while also improving feedback control~\cite{braun2009}. Experienced individuals therefore approach a new movement of a familiar class with more accurate predictions, as shown by expert cricket batsmen, who anticipate the bounce of the ball with shorter-latency saccades than amateurs~\cite[p.~723]{wolpert2021}. This advantage is, however, specific to the class of movements practised, since motor adaptation generalizes poorly to conditions that differ from the trained ones~\cite[p.~855]{scott2021}.
+Prior motor experience affects how a new movement is learned, even when it has never been performed. A new behaviour is learned easily when it can be approximated by combining existing motor primitives~\cite[p.~734]{wolpert2021}, and practice with a variety of tasks sharing the same structure facilitates the learning of new tasks with that structure, while also improving feedback control~\cite{braun2009}. Experienced individuals therefore approach a new movement of a familiar class with more accurate predictions, as shown by expert cricket batsmen, who anticipate the bounce of the ball with shorter-latency saccades than amateurs~\cite[p.~723]{wolpert2021}. This advantage is, however, specific to the class of movements practised, since motor adaptation learned in one direction generalises poorly to other directions~\cite[p.~855]{scott2021}.
 
 From a kinematic perspective, the quality of motor control has been related to how closely velocity profiles match ideal lognormals, a property that develops with learning and declines with ageing~\cite{plamondon2013}.
 \subsection{Human trajectories}
 Several studies have investigated human motion: Fitts' law~\cite{fitts1954} relates movement duration to the required accuracy, while the minimum-jerk model~\cite{flash1985} predicts the bell-shaped velocity profiles typical of reaching movements by assuming the nervous system minimizes jerk. Curvilinear movements instead obey the two-thirds power law~\cite{lacquaniti1983}, which links angular velocity to local curvature, while the isochrony principle states that movement duration is largely independent of trajectory extent~\cite{viviani1995}.
 
-An alternative is offered by the Kinematic Theory of rapid human movements, in which a movement is described as the superimposition of elementary strokes each with a lognormal velocity profile, generated by the response of the neuromuscular system~\cite{plamondon1995a,plamondon1995b}; this is the idea behind the Sigma-Lognormal model~\cite{oreilly2009}. Working on this framework, Ferrer et al. proposed iDeLog~\cite{idelog}, an iterative dual spatial and kinematic parameter-extraction method that reconstructs 2D trajectories from their Sigma-Lognormal parameters, introducing the Signal-to-Noise Ratio, computed separately on the velocity profile and on the spatial path, as a metric for reconstruction quality. The framework was later extended to three-dimensional movements with iDeLog3D, which reconstructs 3D kinematics by linking virtual target points through temporally overlapping planar circumferences~\cite{idelog3d}.
+An alternative is offered by the Kinematic Theory of rapid human movements, in which a movement is described as the superimposition of elementary strokes, each with a lognormal velocity profile generated by the response of the neuromuscular system~\cite{plamondon1995a,plamondon1995b}. In its Sigma-Lognormal formulation, the parameters of the strokes can be extracted from recorded movements~\cite{oreilly2009}. Ferrer et al. proposed iDeLog~\cite{idelog}, an iterative dual spatial and kinematic extraction method for planar trajectories, whose reconstruction quality is measured by the signal-to-noise ratio computed separately on the velocity profile and on the spatial path. The framework was later extended to three-dimensional movements with iDeLog3D, which reconstructs 3D kinematics by linking virtual target points through temporally overlapping planar circumferences~\cite{idelog3d}.
 
 More recently, this framework has been applied to physical human-robot interaction to define a Human-Likeness and Comfort index for robot trajectories: Coccaro et al. showed a consistent relation between perceived comfort and adherence to a lognormal velocity profile, validating the index against comfort judgments~\cite{coccaro}. 
 %Tying these findings to the debate on anthropomorphic robot design~\cite{fink2012,onnasch2021,wittmann2024}, this thesis aims to develop an anthropomorphic motion planner to ease collaboration between humans and collaborative robots.
@@ -332,31 +391,61 @@ The three lines of research reviewed in this chapter, namely human--robot intera
 
 Neither hypothesis has yet been examined in a unified way. The evidence on motor resonance comes mostly from visually mediated interaction and from minimum-jerk or similar velocity profiles~\cite{kupferberg2011,bisio2014}, whereas physical interaction, in which the human partner is guided by the robot, has received less attention~\cite{maurice2018}. The lognormal description has been used to assess the comfort of robot trajectories~\cite{coccaro}, while using it to generate them, rather than to evaluate them, is the focus of this work. The correspondence between lognormal strokes and muscle activity has been supported by simulation~\cite[pp.~55, 75]{parziale2016}, but not measured in humans, and most applications of the Kinematic Theory concern planar handwriting and signatures, its extension to three-dimensional movements being recent~\cite{idelog3d}. Finally, a human-like motion addresses the predictability of a robot rather than its legibility, which requires the observer to be modelled explicitly~\cite{dragan2013}.
 
-This work addresses part of these gaps: it describes three-dimensional movements recorded through a haptic device as superimposed lognormal strokes, and uses the extracted parameters to train a generative model that produces new movements from the same elementary units. It does not test the neural or muscular basis of the strokes, nor their effect on a human partner in physical interaction. These questions could be addressed in future work by complementing the kinematic analysis with electromyography, to relate each stroke to the activity of agonist and antagonist muscles, with whole-arm motion capture, to relate the end-effector strokes to joint coordination, and with electroencephalography, which has already been used to relate the timing of a motor command to the Kinematic Theory~\cite{oreilly2013eeg}.
+Several tools extract lognormal parameters from recorded movements. For single rapid movements, the Delta-Lognormal parameters can be estimated from the speed profile alone, with locally optimal~\cite{djioua2009} or globally optimal~\cite{oreilly2012} algorithms. For complex planar movements, the Robust XZERO algorithm extracts Sigma-Lognormal parameters from the velocity~\cite{oreilly2009}, while iDeLog jointly optimises the reconstruction of trajectory and velocity, starting from an action plan of virtual target points inspired by motor equivalence~\cite{idelog}. Its three-dimensional extension, iDeLog3D, is one of the few tools operating on spatial movements~\cite{idelog3d}, by reducing the problem as a sequence of planar movements.
 
-% Idelog che non cerca di rappresentare il comportamento motorio ma solo di minimizzare l'errroe di ricostruzione mediante più stroke possibili.
+These extractors are evaluated mainly through the quality of the reconstruction, measured as the signal-to-noise ratio between the observed and the reconstructed signals. A high reconstruction quality, however, does not guarantee that the extracted strokes are meaningful from a motor control perspective, since different decompositions may reproduce the same movement equally well. For the Delta-Lognormal model, it has been shown that physiologically derived rules are needed, in addition to global optimality, to obtain meaningful parameters~\cite{oreilly2012}. When the parameters are used to train a generative model, a further requirement emerges: similar movements should be described by similar sets of strokes, so that their distribution can be learned. 
+
+Extraction methods for three-dimensional movements that combine kinematics and geometry, and that favour a decomposition consistent with the organisation of the motor system over the most accurate reconstruction, therefore remain scarce.
+
+This work addresses part of these gaps. It proposes an extraction method that describes three-dimensional movements recorded through a haptic device as lognormal strokes in time and Bézier segments in space, and uses the extracted parameters to train a generative model that produces new movements from the same elementary units. It does not test the neural or muscular basis of the strokes, nor their effect on a human partner in physical interaction. These questions could be addressed in future work by complementing the kinematic analysis with electromyography, to relate each stroke to the activity of agonist and antagonist muscles, with whole-arm motion capture, to relate the end-effector strokes to joint coordination, and with electroencephalography, which has already been used to relate the timing of a motor command to the Kinematic Theory~\cite{oreilly2013eeg}.
 
 %==============================================================================
 % 3. Proposed Solution
 %==============================================================================
 \chapter{Proposed Solution}
 
-This chapter gives a comprehensive overview of the solution adopted to address the problem at hand, starting from the device chosen, going through the data collection and processing systems, then ending with the generative model and its performance evaluation. The goal is to provide the reader with a clear understanding of the choices, weighing pros and cons, so to justify the decisions made.
+This chapter gives a comprehensive overview of the solution adopted to address the problem at hand, starting from the methodology and the architecture of the system, going through the data collection and processing systems, and ending with the generative model and its training. The goal is to provide the reader with a clear understanding of the choices, weighing pros and cons, to justify the decisions made; the evaluation of the system is the subject of Chapter~\ref{ch:validation}.
 % The problem has been approached by combining software modules, each responsible for a specific task and independent with respect to the others. This solution allows to easily replace modules, speeding up the development process by allowing the testing of the single units of the system, and avoids coupling.
 
 \section{Methodology}
-As required by the problem to solve, the chosen methodological approach focuses on the data. This decision was natural, as having to put together various independent system means looking for a common interface for all of them. And in this case, that common interface is the data flow. 
+% Data-centred view of the methodology: the data flows through an ordered sequence
+% of interchangeable stages, each exposed to its own sources of error.
+% Arrow convention (block diagram): solid arrows carry data, dashed arrows are
+% disturbances acting on a stage.
+% Requires: \usepackage{tikz}
+%           \usetikzlibrary{positioning, arrows.meta, calc, decorations.pathreplacing}
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \input{images/tikz/pipeline.tex}
+    }
+    \caption{Data-centred view of the methodology. Solid arrows carry the data through an ordered sequence of stages; dashed arrows are the sources of error acting on each stage. Any stage can be replaced as long as the meaning of the data it receives and produces is preserved. Braces show the subsystem in charge of each stage (Figure~\ref{fig:system_overview}).}
+    \label{fig:methodology_dataflow}
+\end{figure}
+As required by the problem, the methodological approach focuses on the data. The choice was natural: connecting several independent systems requires a common interface among them, and here that interface is the flow of data.
 
-This data is the very essence of the work, and its flow and change must be carefully observed. From the data acquisition, human motion characteristics must be present in its content. There may be errors from the collection device (measurement), errors from the collection itself (bias), errors from the software modules themselves (bugs), and finally, error from the generative model itself, due to a wrong architecture. 
+The data is the core of the work, and the way it flows and changes must be monitored carefully. From the acquisition onwards, it must retain the characteristics of human motion, while every stage can introduce errors (Figure~\ref{fig:methodology_dataflow}): measurement errors of the collection device, biases of the collection procedure, bugs of the software modules, the approximation of the reconstruction model and the design choices of the generative model.
 
-Having in mind this flow, the methodology originates immediately, and asks for modularity. Someday, the data collection may be done through motion trackers, recording the motion of another part of the body. Meanwhile, instead of choosing one step adopted by this solution, someone else may try a different technique. Whatever is the reason behind the change, and the module changed, the flow of data and its meaning will always be the same.
+This view of the data leads directly to modularity. In the future, the data may be collected with motion trackers, or from another part of the body, and any stage of this solution may be replaced by a different technique. Whatever stage changes, and for whatever reason, the flow of the data and its meaning stay the same.
 
-Other than modularity, in this methodology the data flows through an ordered sequence of actions: a pipeline. While this aspect seems to regard more the system design, it is important to have in mind that also the decision of the collection method, the device it needs, the task assigned, and the experimental campaign themselves are steps that shape the data during its flow. And these decision may be changed later, but the pipeline must still work nonetheless.
+Besides being modular, the methodology makes the data flow through an ordered sequence of stages: a pipeline. Although this aspect seems to concern the system design, the choices of the collection method, of the device it needs, of the tasks and of the experimental campaign are also stages that shape the data along its flow; they may change later, and the pipeline must keep working nonetheless.
 
 \section{System Design}
-The requirements that arose from choosing this methodology now apply to the composition of subsystem inside the overall system itself. Each subsystem corresponds to an interchangeable module; as required by the methodology adopted each is a step of the pipeline in charge of managing data. 
-
-The three main subsystems are the following
+% Overall system architecture: three subsystems connected only through datasets.
+% Arrow convention (ICOM): inputs enter from the left, outputs leave from the right,
+% controls enter from the top, mechanisms enter from the bottom.
+% Requires: \usepackage{tikz}
+%           \usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc}
+The requirements that arise from this methodology apply to the subsystems of the overall system. Each subsystem is an interchangeable module and, as the methodology requires, a stage of the pipeline in charge of managing the data.
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\linewidth}{!}{%
+        \input{images/tikz/system_design.tex}
+    }
+    \caption{Overall architecture of the system. The three subsystems communicate only through datasets, represented as cylinders. Inputs enter from the left and outputs leave from the right; controls enter from the top and mechanisms from the bottom. The same formal task definition governs both the human subject and the generative model.}
+    \label{fig:system_overview}
+\end{figure}
+The three main subsystems are the following:
 \begin{itemize}
     \item The data collection system concerns recording the human motion data
     \begin{itemize}
@@ -370,129 +459,583 @@ The three main subsystems are the following
     \begin{itemize}
         \item The interface with the data collection system, through accessing the collected dataset
         \item The codification of a theoretical model behind the reconstruction of the collected data through optimization problems
-        \item The reconstructed dataset, which entries are the reformulation of the collected data through a set of feature, explained by the model adopted
+        \item The reconstructed dataset, whose entries are the reformulation of the collected data through new features, explained by the model adopted
     \end{itemize}
     \item The data generation system manages the generation of new human motion data
     \begin{itemize}
         \item The interface with the data processing system, through reading the reconstructed dataset
-        \item The interface with the tasks, which interpretation must be the same of the human subject to not introduce bias in the dataset
+        \item The interface with the tasks, whose interpretation must be the same as that of the human subject, so as not to introduce bias in the dataset
         \item The neural network model architecture, its training and generation methods
-        \item The training procedure defined by the loss function, the set of features to take as input, as recurrent input from the previous task, the expected outputs, and the data sets
+        \item The training procedure defined by the loss function, the set of features to take as input, as recurrent input from the previous stroke, the expected outputs, and the data sets
     \end{itemize}
 \end{itemize}
 
-The following subsections provide a deeper insight into each system, without focusing on the implementation of them, which main modules are instead detailed in the next three sections, one for each subsystem. This more general overview serves to understand how the three system work in an architectural point of view.
-
-Regarding the reasoning behind parameters or techniques adopted by these subsystems, their explanation is instead given in the next chapter.
+The following subsections describe each subsystem from an architectural point of view, without its implementation, whose main modules are detailed in the next three sections, one per subsystem. The values of the parameters used by the subsystems, and the reasons behind them, are given in the next chapter.
 
 \subsection{Data Collection System}
-The data collection system is responsible for recording the human motion data. It is composed by the experiments themselves, the haptic device used to record the human motion, and the software that manages the communication between the experimenter, the haptic device and the human subject.
-\paragraph{Haptic Device} 
-The device adopted for the problem is \textit{Touch}, from \textit{3D Systems}. It is a haptic device with six degrees of freedom, allowing it to move in three-dimensional space and rotate around three axes. It is equipped with a stylus that can be held by the user, allowing them to interact with the device. The device is able to produce some linear forces, which are applied to the user's hand through the stylus. 
+The data collection system is responsible for recording the human motion data. It is composed of the experimental campaign, the device that records the human motion, and the software that manages the communication between the experimenter and the other two components.
 
-This kind of devices is commonly used in teleoperation, in which the user controls a remote robot by moving the stylus and feeling the forces applied by the robot. In this case the device is used only to collect data from the user's movements. 
+\paragraph{Experimental Campaign}
+An experiment consists of a task, an ordered sequence of waypoints to traverse. The subject starts the movement at the first waypoint and passes through all the others in a single swift, continuous motion, without stopping before the last one.
+
+This information must be included in the experimental protocol, so that every subject executes the experiments with the same knowledge, avoiding the biases that a different knowledge of the campaign would introduce. The protocol must also prevent reflexes, produced by spinal circuits, and corrective micro-movements driven by visual feedback from polluting the intentional movements: they would change the movement and introduce micro-strokes in the trajectories, corrupting the reconstruction.
+
+The tasks must also be expressed in terms that a machine can read, so that the same task can be given to the generative model in training and in generation; any difference between the representation given to the subject and the one given to the model would be a source of bias. This requires a mathematical representation of the task. The requirements that are not part of this representation, such as not stopping and reaching the waypoints in order, are learned by the network from the distribution of the data.
+
+The simplest way to align the two representations is to show the waypoints in a virtual space, explored through the screen and the haptic force feedback: every waypoint has a numerical representation and a corresponding visual one. The subject fuses the visual and the haptic feedback into a single representation in the posterior parietal cortex, through the dorsal visual stream and the somatosensory system. Some tasks also convey semantic information, by recalling motor plans already learned, such as those of letters and shapes.
+
+\paragraph{Data Acquisition Hardware}
+The device adopted for acquiring the human movements is the \textit{Touch} haptic device, from \textit{3D Systems}. It senses the position and the orientation of a stylus held by the user, with six degrees of freedom, and applies forces along three axes to the user's hand through the stylus.
+
+Since the device can apply forces, it can guide the hand of the subject to the waypoints with sufficient accuracy. During the training session of a task, the subject is guided through the waypoints one after the other, to learn their positions; before every recording, the subject is taken to the first waypoint of the task.
+
+\paragraph{Interface}
+The interface manages the communication among the subject, the experimenter and the data collection device. Through this interface, the experimenter chooses a task and records the movements of the subject, who perceives the positions of the waypoints through the forces of the device and sees their own position with respect to them on the screen.
+
+Through the interface, the subject understands the task, both visually and through proprioception thanks to the haptic feedback, perceives their position in the workspace, and knows when the recording starts and ends.
+
+\paragraph{Input \& Output}
+The interface specifies the kind of data expected as input and the format of the output. As input, it receives the tasks of the experimental campaign, each defined as a sequence of points in the 3D workspace. As output, the dataset stores, for every recording of every task and subject, the timestamped sequence of positions traversed by the subject, with their linear velocities.
 
 \subsection{Data Processing System}
-The data processing system is responsible for processing the collected data by extracting the features that describe it according to the theoretical model. This model is based on the theory of kinematics of rapid human movements, which describes human motion as a sequence of primitives, called lognormal strokes, that can be superimposed to generate complex movements. 
+\label{sec:data_processing_system}
+The data processing system is responsible for processing the collected data by extracting the parameters that describe it according to the theoretical model. This model is based on the Kinematic Theory of rapid human movements~\cite{plamondon1995a}, which describes human motion as a sequence of primitives, called lognormal strokes, that are superimposed to generate complex movements.
+
+\paragraph{Reconstruction model}
+To reduce the complexity of its representation, the collected data is reconstructed through a small set of parameters. The speed of the motion is reconstructed according to the Kinematic Theory, while its path is reconstructed by a spline of Bézier curves, one per stroke.
+
+The Kinematic Theory suggests that the speed may be linked to the control variable used by the central nervous system to generate movements, and that its asymmetric bell-shaped profile is the result of an underlying phenomenon. If the neuromuscular system is modelled as a cascade of a large number of coupled subsystems, each introducing a delay, the central limit theorem gives its response a lognormal profile. Therefore, the speed of the system, when stimulated at a time $\sym{tzero}$ with a command $\sym{amplitude}$, the distance to traverse, is
+\begin{equation}
+    \left|\sym{velocity}(\sym{t};\sym{tzero},\sym{mu},\sym{sigma}^2)\right|=\sym{amplitude}\sym{lognormal}\left(\sym{t};\sym{tzero},\sym{mu},\sym{sigma}^2\right)=\dfrac{\sym{amplitude}}{\sym{sigma}\sqrt{2\pi}\left(\sym{t}-\sym{tzero}\right)}\exp\left\{-\dfrac1{2\sym{sigma}^2}\left[\ln\left(\sym{t}-\sym{tzero}\right)-\sym{mu}\right]^2\right\}
+\end{equation}
+where $\sym{t}$ is the time and $\sym{mu}$, $\sym{sigma}$ are the log-time delay and the log-response time, respectively. As previously stated, a complex movement is composed of the superposition of these strokes over time, which is embedded in the Sigma-Lognormal model. In this work, the speed is approximated by the sum of the speed profiles of the strokes,
+\begin{equation}
+    \left|\sym{velocity}(\sym{t})\right|\approx\sum_{i=1}^{\sym{nsegments}}\left|\sym{velocity}_i\left(\sym{t};\sym{tzero}_i,\sym{mu}_i,\sym{sigma}_i^2\right)\right|=\sum_{i=1}^{\sym{nsegments}}\sym{amplitude}_i\sym{lognormal}_i\left(\sym{t};\sym{tzero}_i,\sym{mu}_i,\sym{sigma}_i^2\right)
+\end{equation}
+which neglects the different directions of overlapping strokes. This definition does not take into account the geometry of the trajectory, which is expressed by the Bézier spline model. A cubic Bézier curve, also used in handover tasks to describe comfortable human-like paths~\cite{bezier}, is defined by four points: the start point $\sym{ctrlpt}_0$, the end point $\sym{ctrlpt}_3$, and the two inner control points $\sym{ctrlpt}_1$, $\sym{ctrlpt}_2$,
+\begin{equation}
+    \sym{bezier}_{\sym*{ctrlpt}_0,\sym*{ctrlpt}_1,\sym*{ctrlpt}_2,\sym*{ctrlpt}_3}(\sym{curvepar})=\left(1-\sym{curvepar}\right)^3\sym{ctrlpt}_0+3(1-\sym{curvepar})^2\sym{curvepar}\,\sym{ctrlpt}_1+3\left(1-\sym{curvepar}\right)\sym{curvepar}^2\sym{ctrlpt}_2+\sym{curvepar}^3\sym{ctrlpt}_3,\quad \sym{curvepar}\in\left[0,1\right]
+\end{equation}
+with derivative
+\begin{equation}
+    \sym{bezier}^{\prime}(\sym{curvepar})=3(1-\sym{curvepar})^2\left(\sym{ctrlpt}_1-\sym{ctrlpt}_0\right)+6(1-\sym{curvepar})\sym{curvepar}\left(\sym{ctrlpt}_2-\sym{ctrlpt}_1\right)+3\sym{curvepar}^2\left(\sym{ctrlpt}_3-\sym{ctrlpt}_2\right).
+\end{equation}
+At the end points only the nearest inner control point contributes:
+\begin{equation}
+    \sym{bezier}^{\prime}(0)=3\left(\sym{ctrlpt}_1-\sym{ctrlpt}_0\right),\qquad \sym{bezier}^{\prime}(1)=3\left(\sym{ctrlpt}_3-\sym{ctrlpt}_2\right).
+    \label{eq:bezier_end_derivatives}
+\end{equation}
+
+To obtain a spline of Bézier curves it is first necessary to ensure $\sym{czero}$ continuity: two consecutive curves $\sym{bezier}_i$ and $\sym{bezier}_{i+1}$ form a spline only if the end point of the first is the start point of the second, $\sym{ctrlpt}_{3,i}=\sym{ctrlpt}_{0,i+1}$. To avoid cusps in the trajectory, which a human hand does not produce, the stricter $\sym{gone}$ constraint is applied, which also imposes the continuity of the tangent direction:
+\begin{equation}
+    \sym{bezier}_i(1)=\sym{bezier}_{i+1}(0),\qquad \sym{bezier}_i^{\prime}(1)=\sym{gratio}_i\,\sym{bezier}_{i+1}^{\prime}(0),\quad \sym{gratio}_i>0.
+\end{equation}
+
+In this work, every stroke lies between two speed minima: the start of the movement or the minimum shared with the previous stroke, and the end of the movement or the minimum shared with the next one. In the speed analysis, it is sufficient to find the lognormal parameters $\sym{tzero}$, $\sym{mu}$, $\sym{sigma}$ that best approximate each stroke between its two minima, since the amplitude $\sym{amplitude}$ is obtained from the length of the path between them.
+
+Similarly, every segment of the path, made of the samples whose timestamps lie between two consecutive speed minima, is approximated by a Bézier curve. The problem is then to find the curves that best approximate the segments and satisfy the $\sym{gone}$ constraint.
+
+Strokes overlap in time, and the overlap must be taken into account. In time, the lognormals are fitted one stroke at a time, and the tail of every fitted lognormal is subtracted from the speed before the following strokes are fitted; in the geometry, consecutive segments are linked by the $\sym{gone}$ constraint.
+
+\paragraph{Model Codification}
+To apply the model to the data, both characterizations are formalized as optimization problems. A recording is a sequence of samples $(\sym{t}_n,\sym{position}_n,\sym{velocity}_n)$, $n=0,\dots,\sym{nsamples}-1$, where $\sym{position}_n\in\mathbb{R}^3$ is the measured position and $\sym{velocity}_n\in\mathbb R^3$ the measured velocity, whose norm is the speed, and the samples are spaced by the sampling interval $\sym{samplingint}$. The local minima of the speed at least $\sym{dtb}$ apart and with a prominence of at least $\sym{vb}$, $\sym{minimum}_0<\sym{minimum}_1<\dots<\sym{minimum}_{\sym*{nwindows}}$, split the recording into the windows $\sym{window}_k=\{\sym{minimum}_k,\dots,\sym{minimum}_{k+1}\}$, one per stroke.
+
+\subparagraph{Kinematic characterization}
+The amplitude of a stroke is not estimated: it is fixed to the length of the measured path inside its window,
+\begin{equation}
+    \sym{amplitude}_k=\sum_{n=\sym{minimum}_k}^{\sym{minimum}_{k+1}-1}\left\lVert\sym{position}_{n+1}-\sym{position}_n\right\rVert,
+    \label{eq:stroke_amplitude}
+\end{equation}
+so that, since $\sym{lognormal}$ integrates to one, the distance covered by each lognormal equals the length of the path it describes. The remaining parameters $\sym{tzero}_k$, $\sym{mu}_k$ and $\sym{sigma}_k$ are estimated one stroke at a time. Starting from the residual speed $\sym{residual}_n^{(0)}=\lVert\sym{velocity}_n\rVert$, the parameters of stroke $k$ solve the bounded non-linear least-squares problem
+\begin{equation}
+    \begin{aligned}
+        \left(\sym{tzero}_k^\star,\sym{mu}_k^\star,\sym{sigma}_k^\star\right)=\operatorname*{arg\,min}_{\sym{tzero},\,\sym{mu},\,\sym{sigma}}\quad
+            & \sum_{n\in \sym{window}_k}\left[\sym{amplitude}_k\sym{lognormal}\left(\sym{t}_n;\sym{tzero},\sym{mu},\sym{sigma}^2\right)-\sym{residual}_n^{(k)}\right]^2\\
+        \text{subject to}\quad
+            & \sym{t}_{\sym*{minimum}_k}-\left(\sym{t}_{\sym*{minimum}_{k+1}}-\sym{t}_{\sym*{minimum}_k}\right)\le\sym{tzero}\le\sym{t}_{\sym*{minimum}_{k+1}}-3\sym{samplingint},\\
+            & \sym{mumin}\le\sym{mu}\le\sym{mumax},\qquad \sym{sigmamin}\le\sym{sigma}\le\sym{sigmamax},
+    \end{aligned}
+    \label{eq:lognormal_fit}
+\end{equation}
+after which the fitted stroke is removed from the residual over the whole recording:
+\begin{equation}
+    \sym{residual}_n^{(k+1)}=\sym{residual}_n^{(k)}-\sym{amplitude}_k\sym{lognormal}\left(\sym{t}_n;\sym{tzero}_k^\star,\sym{mu}_k^\star,\sym{sigma}_k^{\star2}\right),\qquad n=0,\dots,\sym{nsamples}-1.
+    \label{eq:residual_update}
+\end{equation}
+The window of a stroke is therefore fitted without the tails of the strokes that precede it. The bounds let the onset precede the window by at most the window duration and force it to precede the end of the window by at least three sampling intervals, so that the stroke has samples to be fitted on; the values of $\sym{mumin}$, $\sym{mumax}$, $\sym{sigmamin}$ and $\sym{sigmamax}$ are given in Chapter~\ref{ch:validation}.
+
+Only the strokes that carry the movement are kept. The peak speed of a stroke, found at peak time $\sym{tzero}_k+e^{\sym{mu}_k-\sym{sigma}_k^2}$
+\begin{equation}
+    \sym{vpeak}_k=\frac{\sym{amplitude}_k}{\sym{sigma}_k\sqrt{2\pi}}\,e^{-\sym{mu}_k+\sym{sigma}_k^2/2}
+    =\sym{amplitude}_k\,\sym{lognormal}\!\left(\sym{tzero}_k+e^{\sym{mu}_k-\sym{sigma}_k^2};\,\sym{tzero}_k,\sym{mu}_k,\sym{sigma}_k^2\right),
+\end{equation}
+is compared with a threshold $\sym{vmin}$: the kept strokes are the contiguous run that starts at the first stroke above the threshold and ends before the first stroke below it. A recording is discarded when the number of kept strokes differs from the number of segments of its task, one less than the number of its waypoints, or when the $\sym{sigma}_k$ of a kept stroke lies on one of its bounds.
+
+\subparagraph{Geometric characterization}
+The kept strokes are renumbered $i=0,\dots,\sym{nsegments}-1$, keeping their windows $\sym{window}_i$ and amplitudes $\sym{amplitude}_i$. Segment $i$ is a cubic Bézier curve $\sym{bezier}_i$ whose end points are the measured positions at its two speed minima, $\sym{ctrlpt}_{0,i}=\sym{position}_{\sym*{minimum}_i}$ and $\sym{ctrlpt}_{3,i}=\sym{position}_{\sym*{minimum}_{i+1}}$, so that consecutive segments share an end point. The two inner control points are expressed through a unit tangent direction and a tangent length at each end,
+\begin{equation}
+    \sym{ctrlpt}_{1,i}=\sym{ctrlpt}_{0,i}+\sym{lams}_i\,\sym{direction}_i,\qquad \sym{ctrlpt}_{2,i}=\sym{ctrlpt}_{3,i}-\sym{lame}_i\,\sym{direction}_{i+1},\qquad\left\lVert\sym{direction}_j\right\rVert=1,\sym{lams}>0,\sym{lame}>0,
+    \label{eq:control_points}
+\end{equation}
+where the direction $\sym{direction}_{i+1}$ of the junction between segments $i$ and $i+1$ is shared by both. As start and end points of a curve are already set, the $\sym{czero}$ continuity constraint is satisfied, yet it is still necessary to satisfy the $\sym{gone}$ constraint
+\begin{equation}
+    \begin{aligned}
+        \sym{bezier}_i(1)  &= \sym{ctrlpt}_{3,i} = \sym{ctrlpt}_{0,i+1} = \sym{bezier}_{i+1}(0),\\
+        \sym{bezier}_i^{\prime}(1) &= 3\left(\sym{ctrlpt}_{3,i}-\sym{ctrlpt}_{2,i}\right) = 3\sym{lame}_i\,\sym{direction}_{i+1}
+                 = \frac{\sym{lame}_i}{\sym{lams}_{i+1}}\,3\sym{lams}_{i+1}\,\sym{direction}_{i+1}\\
+                &= \frac{\sym{lame}_i}{\sym{lams}_{i+1}}\,3\left(\sym{ctrlpt}_{1,i+1}-\sym{ctrlpt}_{0,i+1}\right)
+                 = \sym{gratio}_i\,\sym{bezier}_{i+1}^{\prime}(0),\qquad \sym{gratio}_i=\frac{\sym{lame}_i}{\sym{lams}_{i+1}}>0,
+    \end{aligned}
+    \label{eq:g1_by_construction}
+\end{equation}
+since $\sym{gratio}_i>0$ the $\sym{gone}$ continuity is satisfied by construction.
+
+Each direction is written as a rotation of an initial estimate $\sym{direstimate}_j$,
+\begin{equation}
+    \sym{direction}_j(\sym{rotation}_j)=\cos\left\lVert\sym{rotation}_j\right\rVert\,\sym{direstimate}_j
+        +\sin\left\lVert\sym{rotation}_j\right\rVert\,\frac{\sym{rotation}_{j,1}\sym{rotbasis}_{j,1}+\sym{rotation}_{j,2}\sym{rotbasis}_{j,2}}{\left\lVert\sym{rotation}_j\right\rVert},
+    \qquad \sym{rotation}_j=\left(\sym{rotation}_{j,1},\sym{rotation}_{j,2}\right)\in\mathbb{R}^2,
+    \label{eq:direction_rotation}
+\end{equation}
+where $(\sym{rotbasis}_{j,1},\sym{rotbasis}_{j,2})$ is an orthonormal basis of the plane orthogonal to $\sym{direstimate}_j$ and $\lVert\sym{rotation}_j\rVert$ is the angle between $\sym{direction}_j$ and $\sym{direstimate}_j$. The estimate $\sym{direstimate}_j$ is the direction of the finite-difference velocity at the node: a forward difference at the start of the chain, a backward difference at its end, and the mean of the two at every junction, each taken towards the nearest sample that does not coincide with the node.
+
+The curve and the data are compared at equal normalized arc length, so that the geometry does not depend on the timing. For sample $n$ of window $\sym{window}_i$ and for the curve, the normalized arc lengths are
+\begin{equation}
+    \sym{dataarc}_{i,n}=\frac{\sum_{m=\sym{minimum}_i}^{n-1}\left\lVert\sym{position}_{m+1}-\sym{position}_m\right\rVert}
+                   {\sum_{m=\sym{minimum}_i}^{\sym{minimum}_{i+1}-1}\left\lVert\sym{position}_{m+1}-\sym{position}_m\right\rVert},\qquad
+    \sym{normarc}_i(\sym{curvepar})=\frac{1}{\sym{arclength}_i}\int_0^{\sym{curvepar}}\left\lVert\sym{bezier}_i^{\prime}(\tau)\right\rVert d\tau,\qquad
+    \sym{arclength}_i=\int_0^1\left\lVert\sym{bezier}_i^{\prime}(\tau)\right\rVert d\tau,
+\end{equation}
+and sample $\sym{position}_n$ is compared with the point $\sym{bezier}_i\left(\sym{normarc}_i^{-1}(\sym{dataarc}_{i,n})\right)$. Since the measured path and the Bézier curve must have the same length $\sym{amplitude}_i$, a further constraint is $\sym{arclength}_i=\sym{amplitude}_i$.
+
+The degrees of freedom (DOFs) of a segment follow from the twelve coordinates of its four control points:
+\begin{itemize}
+    \item 3 DOFs are removed by the measured start point $\sym{ctrlpt}_{0,i}$ and 3 by the measured end point $\sym{ctrlpt}_{3,i}$;
+    \item 2 DOFs are removed by the start direction $\sym{direction}_i$ when $i>0$, since it is shared with the previous segment;
+    \item 1 DOF is removed by the length constraint $\sym{arclength}_i=\sym{amplitude}_i$.
+\end{itemize}
+A segment therefore has 5 DOFs if it is the first of the recording and 3 otherwise, and a chain of $\sym{nsegments}$ segments has $3\sym{nsegments}+2$: the $4\sym{nsegments}+2$ variables of the following problem, $2\sym{nsegments}$ tangent lengths and $\sym{nsegments}+1$ rotations of two components each, minus its $\sym{nsegments}$ length constraints. The optimization problem is
+\begin{equation}
+    \begin{aligned}
+        \min_{\{\sym{lams}_i,\sym{lame}_i\},\,\{\sym{rotation}_j\}}\quad
+            & \sum_{i=0}^{\sym{nsegments}-1}\frac{1}{\left|\sym{window}_i\right|\sym{amplitude}_i^2}\sum_{n\in \sym{window}_i}
+              \left\lVert\sym{bezier}_i\left(\sym{normarc}_i^{-1}(\sym{dataarc}_{i,n})\right)-\sym{position}_n\right\rVert^2\\
+        \text{subject to}\quad
+            & \sym{arclength}_i=\sym{amplitude}_i, && i=0,\dots,\sym{nsegments}-1,\\
+            & \sym{lammin}\le\sym{lams}_i,\,\sym{lame}_i\le \sym{lammax}_i, && i=0,\dots,\sym{nsegments}-1,\\
+            & \left\lVert\sym{rotation}_j\right\rVert\le\sym{alphamax}, && j=0,\dots,\sym{nsegments}.
+    \end{aligned}
+    \label{eq:bezier_fit}
+\end{equation}
+Dividing the error of each segment by $\sym{amplitude}_i^2$ makes it independent of the size of the segment, so that short and long segments weigh the same. The equality constraint links the two characterizations: each segment is exactly as long as the distance covered by its lognormal, so that the curve can be traversed with the speed of the stroke. It is always feasible, since $\sym{amplitude}_i$, the length of the measured polyline, is not shorter than the chord $\lVert\sym{ctrlpt}_{3,i}-\sym{ctrlpt}_{0,i}\rVert$. The values of $\sym{lammin}$, $\sym{lammax}_i$ and $\sym{alphamax}$ are given in Chapter~\ref{ch:validation}. A recording is discarded when a tangent length reaches its upper bound $\sym{lammax}_i$, a shape that a cubic segment cannot follow; a tangent length on $\sym{lammin}$ is accepted, as it marks a nearly straight stroke or a sharp arrival.
+
+\paragraph{Interface} 
+The reconstruction shall not be limited to the collected dataset, but shall extend to other datasets, such as motion data captured with motion trackers or other measurement devices, which may be sampled at different frequencies, at different scales, or with missing information. The effect of different recording frequencies and devices is mitigated by filtering and resampling the original signal, which consists of the positions in the three-dimensional space and of the recorded velocities, both timestamped at the same instants.
+
+Besides this data, the coordinates of the waypoints of every task are needed to know the number of strokes expected in its recordings: a recording with a different number of strokes is rejected.
+
+\paragraph{Reconstructed Dataset}
+When a recording contains the expected number of strokes, the output contains, for every stroke, the parameters of its kinematics and of its geometry (Table~\ref{tab:stroke_parameters}), together with its position in the sequence. These are the quantities from which the features of the generative model are computed (Section~\ref{sec:features}).
 
 \subsection{Data Generation System}
-The data generation system is responsible for generating new human motion data, based on the features extracted from the collected data, and the task to perform described in an experiment. 
+\label{sec:data_generation_system}
+The data generation system is responsible for generating new human motion data, based on the parameters extracted from the collected data and on the task to perform, described as in an experiment.
 
+\paragraph{Generative models}
+Let the observations $\sym{obs} \in \sym{obsspace} \subseteq \mathbb{R}^{\sym{dimension}}$ and, where available, the labels or conditioning variables $\sym{condition} \in \sym{condspace}$ be drawn independently from an unknown distribution $\sym{pdata}$. A \emph{discriminative} model learns the mapping from observations to labels, either as a conditional distribution $\sym{pmodel}(\sym{condition} \mid \sym{obs})$ or as a decision function $\sym{decisionfn} : \sym{obsspace} \to \sym{condspace}$. In geometric terms, it only has to place the boundaries between decision regions in the input space. A \emph{generative} model, instead, describes how the observations themselves are distributed: it is a parametric family of distributions $\sym{family} = \{\sym{pmodel} : \sym{modelparams} \in \sym{paramspace}\}$ over the observation space, whose members may represent the marginal $\sym{pmodel}(\sym{obs})$, the joint $\sym{pmodel}(\sym{obs}, \sym{condition})$ or the conditional $\sym{pmodel}(\sym{obs} \mid \sym{condition})$. Learning amounts to selecting the member of the family closest to the data distribution under a divergence function $\sym{divergence}$,
+\begin{equation}
+    \sym{modelparams}^\star = \arg\min_{\sym{modelparams} \in \sym{paramspace}} \sym{divergence}(\sym{pdata}, \sym{pmodel}),
+\end{equation}
+which, for the Kullback--Leibler divergence, corresponds to the maximum likelihood estimation,
+\begin{equation}
+\sym{modelparams}^\star = \arg\max_{\sym{modelparams}} \mathbb{E}_{\sym{obs} \sim \sym{pdata}}[\log \sym{pmodel}(\sym{obs})]
+\end{equation}
+
+The relation between the two approaches follows from the product rule, which factorises the joint distribution in two equivalent ways:
+\begin{equation}
+    \sym{pdist}(\sym{obs}, \sym{condition}) = \sym{pdist}(\sym{condition} \mid \sym{obs})\, \sym{pdist}(\sym{obs}) = \sym{pdist}(\sym{obs} \mid \sym{condition})\, \sym{pdist}(\sym{condition}).
+\end{equation}
+A discriminative model estimates only $\sym{pdist}(\sym{condition} \mid \sym{obs})$, whereas a generative model of the joint must also account for $\sym{pdist}(\sym{obs})$; the conditional can be recovered from the joint through Bayes' theorem, but not vice versa.
+
+The generative task is therefore strictly more general, and harder for three reasons: its output is a distribution over the high-dimensional space $\sym{obsspace}$ rather than over a small set of labels; the density must be normalised over $\sym{obsspace}$, which in general involves an intractable integral; and errors anywhere in $\sym{obsspace}$ matter, whereas a classifier is sensitive only to errors near the decision boundary.
+
+Greater difficulty is not necessarily a disadvantage: when the modelling assumptions on $\sym{pdist}(\sym{obs} \mid \sym{condition})$ hold, a generative classifier can approach its asymptotic error with fewer samples than its discriminative counterpart~\cite{ng2002discriminative}.
+
+\subparagraph{Conditional generative models}
+When the conditioning variable $\sym{condition}$ is set by the task rather than observed as an outcome, there is no reason to model its distribution, and the object of interest becomes the conditional $\sym{pmodel}(\sym{obs} \mid \sym{condition})$. Such a model is discriminative with respect to $\sym{condition}$, since it ignores $\sym{pdist}(\sym{condition})$, but generative with respect to $\sym{obs}$, since it describes the whole distribution of the observations for each condition. Its parameters are estimated by conditional maximum likelihood,
+\begin{equation}
+    \sym{modelparams}^\star = \arg\max_{\sym{modelparams}}\, \mathbb{E}_{(\sym{obs}, \sym{condition}) \sim \sym{pdata}}[\log \sym{pmodel}(\sym{obs} \mid \sym{condition})],
+\end{equation}
+in which $\sym{pdist}(\sym{condition})$ enters only as the weighting of the conditions seen during training. Whenever the mapping from $\sym{condition}$ to $\sym{obs}$ is one-to-many, a point estimate is inadequate: the predictor that minimises the mean squared error is the conditional mean $\mathbb{E}[\sym{obs} \mid \sym{condition}]$, which, for a multimodal $\sym{pdist}(\sym{obs} \mid \sym{condition})$, may fall in a region of negligible probability~\cite[§5.6]{bishop2006pattern}.
+
+\subparagraph{Sequential data and autoregressive models}
+The formulation above assumes independent and identically distributed observations. For sequential data $\sym{obs}_{1:\sym*{seqlen}} = (\sym{obs}_1, \dots, \sym{obs}_{\sym*{seqlen}})$ this assumption no longer holds, since each element depends on those preceding it. Given the condition $\sym{condition}$ of the whole sequence, the chain rule of probability provides an exact factorisation that requires no further assumption:
+\begin{equation}
+    \sym{pdist}(\sym{obs}_{1:\sym*{seqlen}} \mid \sym{condition}) = \prod_{t=1}^{\sym{seqlen}} \sym{pdist}(\sym{obs}_t \mid \sym{obs}_{<t}, \sym{condition}).
+\end{equation}
+A model that parametrises each factor directly is called \emph{autoregressive}. Maximising the likelihood of this factorisation means feeding each factor with the observed history (teacher forcing), whereas at generation time the sampled elements are fed back.
+
+Restricting the information each factor receives corresponds to explicit modelling assumptions. Let $\sym{condstep}_t = \sym{condstep}_t(\sym{condition})$ denote the part of the condition relevant to step $t$, such as the next targets expressed relative to the nominal starting point of the element. If step $t$ sees only $\sym{condstep}_t$ and the last $\sym{markovorder}$ elements, the model is a time-inhomogeneous Markov chain of order $\sym{markovorder}$, $\sym{pdist}(\sym{obs}_t \mid \sym{obs}_{t-\sym*{markovorder}:t-1}, \sym{condstep}_t)$, a special case of the autoregressive family. A recurrent model can instead depend on the whole history, which it compresses into a deterministic state of fixed size,
+\begin{equation}
+    \sym{state}_t = \sym{statefn}\!\left(\sym{state}_{t-1}, \sym{obs}_{t-1}, \sym{condstep}_t\right), \qquad \sym{state}_0,\, \sym{obs}_0 \text{ fixed},
+    \label{eq:recurrent_state}
+\end{equation}
+and sets
+\begin{equation}
+    \sym{pmodel}(\sym{obs}_t \mid \sym{obs}_{<t}, \sym{condstep}_{1:t}) = \sym{qtheta}(\sym{obs}_t;\, \sym{state}_t),
+\end{equation}
+where $\sym{qtheta}(\cdot\,;\, \sym{state})$ is a density whose parameters are functions of $\sym{state}$.
+
+The state is not an additional random variable: being a deterministic function of $(\sym{obs}_{<t}, \sym{condstep}_{1:t})$, it is a learned summary of the history. The only conditional independence assumed is that $\sym{obs}_t$ does not depend on the parts of the condition beyond $\sym{condstep}_{1:t}$; given $\sym{condition}$, the pair $(\sym{state}_t, \sym{obs}_t)$ is then Markov, while $\sym{obs}_t$ alone is not~\cite[ch.~10]{goodfellow2016deep}.
+
+The autoregressive factorisation has three further consequences, which hold for every model of this family, Markov chains included, and not only for recurrent ones. First, it removes the second difficulty of generative modelling listed above, the normalisation over the observation space. If every factor is normalised over $\mathbb{R}^{\sym{dimension}}$ for any value of its conditioning arguments, the product is normalised over $\mathbb{R}^{\sym{dimension}\sym{seqlen}}$, as follows by integrating out $\sym{obs}_{\sym*{seqlen}}, \sym{obs}_{\sym*{seqlen}-1}, \dots, \sym{obs}_1$ in turn:
+\begin{equation}
+    \int_{\mathbb{R}^{\sym{dimension}\sym{seqlen}}} \prod_{t=1}^{\sym{seqlen}} \sym{pmodel}(\sym{obs}_t \mid \sym{obs}_{<t}, \sym{condition})\, \mathrm{d}\sym{obs}_{1:\sym*{seqlen}} = 1 .
+\end{equation}
+The integral over the space of whole sequences is therefore never computed: the dependencies between elements are carried by the conditioning arguments, which may enter the parameters of each factor through an arbitrary function, provided that it returns valid parameters, while normalisation is left to a family over $\mathbb{R}^{\sym{dimension}}$ whose normalising constant is known in closed form.
+
+Second, exact samples are obtained by drawing $\sym{obs}_1, \sym{obs}_2, \dots, \sym{obs}_{\sym*{seqlen}}$ in order, each from its own factor given the elements already drawn. Third, when the factors share their parameters across steps, as in Markov and recurrent models, a single model defines a distribution for any length $\sym{seqlen}$, provided that $\sym{seqlen}$ is either given by the condition or modelled explicitly, for instance with an end-of-sequence indicator.
+
+\subparagraph{Mixture density networks}
+Each factor still needs a family of conditional densities over $\mathbb{R}^{\sym{dimension}}$ that can be multimodal, is normalised by construction, has a likelihood in closed form and is easy to sample. A mixture density network~\cite{bishop1994mixture} meets these requirements by letting a neural network map the state $\sym{state}_t$ to the parameters of a Gaussian mixture,
+\begin{equation}
+    \sym{qtheta}(\sym{obs}_t;\, \sym{state}_t) = \sum_{k=1}^{\sym{ncomp}} \sym{mixweight}_k(\sym{state}_t)\,
+        \sym{gaussian}\!\left(\sym{obs}_t;\, \sym{mixmean}_k(\sym{state}_t),\, \sym{mixchol}_k(\sym{state}_t) \sym{mixchol}_k(\sym{state}_t)^{\top}\right),
+\end{equation}
+where the weights $\sym{mixweight}_k$ come from a softmax, so that they are positive and sum to one, and every $\sym{mixchol}_k$ is lower triangular with a positive diagonal, so that every covariance is symmetric positive definite. With enough components a Gaussian mixture can approximate almost any continuous density to arbitrary accuracy~\cite[§2.3.9]{bishop2006pattern}; once $\sym{ncomp}$ is fixed, however, the number of components becomes a modelling assumption in its own right, since it limits how many distinct alternatives the model can represent at each step. Either way, the conditional mean, inadequate for a one-to-many mapping, is replaced by the whole conditional distribution. Recurrent mixture density networks were proposed by Schuster~\cite{schuster1999better}, popularised by Graves for online handwriting generation~\cite{graves2013generating} and later used for free-hand sketches~\cite{ha2018neural}.
 
 \section{Haptic Interface Software}
-The haptic interface software manages both the user interface of the haptic device and the communication with the robot.
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=1\linewidth, inkscapelatex=false]{svgs/fsm_diagram.svg}
+    \caption{Finite-state machine of the haptic interface software. From \mbox{\texttt{SELECT\_EXPERIMENT}} it is possible to choose the experiment, while other key presses start either a training or a recording session. In both, \mbox{\texttt{NEXT\_WAYPOINT}} guides the subject with the haptic device: towards the next waypoint during training, and towards the start of the path before recording. Another key press ends the training, or saves or discards the recording, and returns to the selection.}
+    \label{fig:haptic_fsm}
+\end{figure}
+The haptic interface software manages both the user interface of the experiment and the communication with the haptic device.
 
 From the side of the experimenter, the software component allows them to control the experiment execution, by selecting its configurations, like the path to show, the number of repetitions, the sampling frequency, and so on.
 
 From the side of the human subject, the software component interfaces with them through a simulated environment that projects the position of the haptic device inside a virtual space. In this space, the path is represented as an ordered sequence of spheres, while the device is represented as a sphere that can be moved by the user through their interaction with the device.
 
 \subsection{\texttt{ROS2} Controller}
-The haptic device controller is in responsible for managing the communication between experiment, haptic device and subject through sending commands and receiving data, and of the experiment execution. 
+\begin{figure}[htbp]
+    \centering
+    \input{images/tikz/diagram_component.tex}
+    \caption{Component diagram of the \texttt{ROS2} modules and of the file system interface. The \texttt{Haptic Device} is the system interface of the controller, which uses the driver API of the \textit{Touch} device for the \texttt{read} and \texttt{write} operations. It is used by the ad-hoc \texttt{haptic\_interaction\_teach\_and\_record\_controller} to read the pose and the twist of the device and to write forces. The experimenter drives the controller through the \texttt{Keyboard Publisher}, which sends the pressed keys to the controller to change its behaviour. Finally, \texttt{RViz2} receives the positions of the waypoints, as an array of markers, and the pose of the device. The file system is accessed once at the start, to read the tasks from a \texttt{YAML} file, and at the end of every recording, to save the recorded motion in a \texttt{CSV} file.}
+    \label{fig:component_diagram}
+\end{figure}
+The haptic device controller is responsible for managing the communication between experimenter, haptic device and subject through sending commands and receiving data, and for the collection of the data. The controller has been written inside the \texttt{ROS2} framework, and acts together with an interface interacting with the actual device through driver API calls. 
 
-The controller takes as input the configuration of the experiment, which includes the path to show, the number of repetitions, the size of the waypoints, the forces to apply and so on. From this information, during the execution it is able to communicate with the experiment through the keyboard, and with the haptic device through its command and state interfaces. The controller is also responsible for collecting the data from the haptic device, which includes the position, orientation, linear and angular velocities.
+The controller is a finite-state machine running at a fixed frequency (Figure~\ref{fig:haptic_fsm}), whose state depends on the commands that the experimenter sends by pressing keys on a keyboard. A key publisher sends the intercepted keys to the controller through a publisher-subscriber relationship, and the controller changes its state or its behaviour according to the key pressed.
 
-Furthermore, it is in charge of communicating with the subject through the screen via  the visualization of the path during the pre-training phase. In this case, the role of the controller is to communicate a series of colored waypoints, and the current position of the haptic device to the visualization software \texttt{RViz2}, which is responsible for rendering the scene on the screen. The controller applies the haptic feedback to the user, by computing the forces to apply to the haptic device based on the current position of the device and the position of the next waypoint, multiplied of a gain factor and the distance between the two.
-% The software component aids the user in following the path by providing them with visual and haptic feedback. The former is given through the visualization of a colored sequence of spheres, in which the color indicates the progress along the path. The latter is given by applying attractive forces towards the next waypoint. Though, since these feedbacks would poison the data, they are disabled during the collection phase. This is because the goal of the experiment is to collect data that reflects the user's natural movements, without any external influence, while taking into account the user awareness of the path to follow. Nonetheless, the more accurate the user is in following the path, the more accurate the collected data will be, and thus the more accurate the generative model will be. Although, this goes in pair with the number of repetitions, paths and waypoints. This is a trade-off between the accuracy of the data, the naturalness of the user's movements and the possible sample poisoning by their fatigue.
+The interaction with the file system allows the controller to read the tasks and to write the recorded motion. Since these operations go through the operating system and are time-consuming, they are executed only when no force is being applied and the state of the device is not being updated.
+
+\subsection{Experiment \& Task Settings}
+As mentioned before, the settings of all experiments must be described in a way that can be read by a machine too. This is necessary to know where to position the waypoints inside the visual space representation and to move the user towards them. 
+
+The task is visualised in the space through \texttt{RViz2}, on a screen shown to the subject during the experiment session, but not during the recording. The waypoints are rendered as spheres with a fixed radius and a colour, from a warm to cool palette, that depends on the position of the waypoint in the sequence.
+
+The position of the subject in this space is represented by a triad of axes, which moves and rotates with the stylus. The axes are longer than the radius of the spheres, so that the subject can tell how far inside each sphere they are. This mitigates the problem of showing depth, which is hard to perceive on a screen, since the information carried by the dorsal visual stream is less accurate than that of the somatosensory system.
+
+As for the haptic feedback, on command of the experimenter the device applies forces that move the subject towards the next waypoint until its sphere is reached, and then towards the following one, up to the last; this function is used both in training and at the start of a recording. In training, the forces move the subject from waypoint to waypoint through the whole sequence, to help them memorise the path through somatosensory information. Before a recording, the subject is taken to the first waypoint, which they do not need to remember, since it is the start of the movement.
+
+The positions of all the waypoints are kept in a file that maps the name of every task to an ordered sequence of points in the space.
+
+\subsection{Motion Recording}
+
+The haptic \textit{Touch} device measures its joint angles with incremental encoders, from which the pose of the stylus is computed through forward kinematics. The poses are saved in the \texttt{CSV} file of the recording as they are, with their timestamps, while the linear twists are obtained by numerical differentiation of the poses, smoothed by a moving average.
+
+The recording phase starts when the experimenter decides; usually, the \texttt{RViz2} window is hidden first, to avoid corrective micro-movements that would pollute the motion of the subject. The subject is then moved to the first waypoint by the haptic device.
+
+Once the waypoint is reached, the subject holds still until the light of the device switches off, and a buffer starts collecting the timestamped readings of the device. The experimenter tells the subject to execute the motion and, once it is done, decides whether to save or discard the recording. A saved recording is written in a \texttt{CSV} file containing the timestamped sequences of poses and twists read during the motion, in a folder tree whose structure identifies the subject and the task. In both cases the buffer is emptied, and the controller waits for the next input of the experimenter.
 
 \section{Data Processing Pipeline}
-In the data processing pipeline the collected data is transformed into a representation that reflects the adoption of the theoretical model of human motion. This is done by finding a set of features that, when combined, can reconstruct the original data sufficiently well. In order to do so, a formal definition of the theoretical model is required, as its implementation is given in these software components.
+In the data processing pipeline the collected data is transformed into a representation that reflects the theoretical model of human motion, by finding a set of parameters from which the original data can be reconstructed sufficiently well. The model was formalised in Section~\ref{sec:data_processing_system}; this section describes its implementation.
 
+The operations applied to the recorded data are, in order, filtering, resampling, the extraction of the kinematic and geometric parameters, and the removal of the recordings that cannot be used; the parameters are stored in a new dataset with the same folder structure as the original one.
 
+\subsection{Filtering and Resampling}
+The positions and the velocities recorded by the device contain measurement noise over most of the spectrum, while human movement occupies only its lowest frequencies. Every component is therefore low-pass filtered with a type II Chebyshev filter, as in most extraction frameworks, such as ScriptStudio and iDeLog. The filter is applied forwards and backwards, so that its phase delay cancels and the speed minima, which separate the strokes, are not shifted in time; it is designed for the median sampling interval of the recording. A cut-off above the frequencies of human movement removes most of the noise and leaves the kinematic components of the movement intact. A lower cut-off makes the minima easier to find, at the expense of distorting the original signal, so the cut-off frequency is a trade-off, discussed in Chapter~\ref{ch:validation}.
 
+The timestamps of the device states are subject to jitter. After filtering, every component of the position and of the velocity is therefore resampled on a uniform grid by piecewise cubic Hermite interpolation (PCHIP). PCHIP was preferred to cubic splines because its nodal slopes are computed locally and constrained so that, in each coordinate, the interpolant neither overshoots the data nor introduces extrema between samples; isolated timing irregularities or quantisation steps therefore cannot propagate as oscillations into neighbouring intervals. Since the Sigma-Lognormal decomposition interprets the speed minima as signatures of neuromotor events, the resampling should add as little kinematic structure of its own as possible: a new extremum could be interpreted as a new movement, degrading the reconstruction or the detection of the minima that split the strokes.
 
-% \subsection{Temporal Characterization}
-% In particular, the crucial information that can be extracted from the dataset is the lognormal parameters of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones. 
+\subsection{Feature Extraction}
+\label{sec:feature_extraction}
+Problems~\eqref{eq:lognormal_fit} and~\eqref{eq:bezier_fit} are not convex, so the extracted parameters depend on how they are solved. This subsection describes the solvers, their starting points and the numerical approximations; the values of the settings it introduces are reported in Chapter~\ref{ch:validation}.
 
-% In literature there are already some software components that can extract the lognormal parameters from human movements, such as the \textit{idelog3d} software. Once this software is applied to the dataset, it will output a new dataset that contains the parameters of each rapid movement across two waypoints, which can be learned by the generative model. Once trained, the model can provide the velocity profile of a new movement across two waypoints through the application of the lognormal parameters.
+\paragraph{Kinematic fit}
+Problem~\eqref{eq:lognormal_fit} is solved with a trust-region reflective method for bounded non-linear least squares. As its cost may have several local minima, it is solved from several starting points, one for every pair $\big(\sym{sigma}^{(0)},\sym{onsetfactor}\big)\in\sym{ssigma}\times\sym{sonset}$, and the solution with the lowest cost is kept. Every starting point places the peak of the initial lognormal, which lies at $\sym{tzero}+e^{\sym{mu}-\sym{sigma}^2}$, at the time $\sym{tpeakwin}$ of the largest residual speed in the window:
+\begin{equation}
+    \sym{tzero}^{(0)}=\sym{tpeakwin}-\sym{onsetfactor}\left(\sym{tpeakwin}-\sym{t}_{\sym*{minimum}_k}\right),\qquad
+    \sym{mu}^{(0)}=\ln\left(\sym{tpeakwin}-\sym{tzero}^{(0)}\right)+\sym{sigma}^{(0)2}.
+    \label{eq:lognormal_start}
+\end{equation}
+The factor $\sym{onsetfactor}$ sets the onset: $\sym{onsetfactor}=1$ puts it at the start of the window, and larger values move it earlier, as the overlap of consecutive strokes allows. The starting points are clipped to the bounds of Problem~\eqref{eq:lognormal_fit}.
 
-% \subsection{Spatial Characterization}
-% Regarding the spatial characterization of the movements, it would be handy to develop a software able to characterize the spatial properties of the movements, such as the starting and ending points, the curvature, the length and so on. In other words, the software should be able to extract the spatial properties of each rapid movement across two waypoints, which can be used to generate new movements that are similar to the original ones.
+\paragraph{Geometric fit}
+Problem~\eqref{eq:bezier_fit} is solved with sequential quadratic programming, in two stages. In the first stage every segment is fitted on its own, with its directions fixed to the estimates $\sym{direstimate}_i$, $\sym{direstimate}_{i+1}$ and the curve parameter taken equal to the normalized arc length of the data, $\sym{curvepar}=\sym{dataarc}_{i,n}$. Under these two approximations the residuals are affine in the tangent lengths, so the problem with the bounds alone is a linear least-squares problem, solved exactly; its solution is the starting point of the same problem with the constraint $\sym{arclength}_i=\sym{amplitude}_i$. In the second stage the whole chain is optimised from the tangent lengths of the first stage and from zero rotations, $\sym{rotation}_j=0$, that is, from the estimated directions.
 
-% A possible interpretation of the spatial properties of a movement is to consider it as a Bézier curve, actually a weighted spline Bézier curve, which is defined by a set of control points to which the curve is attracted. The control points are not necessarily the waypoints, while the weights are the parameters that define the attraction of the curve to the control points. The generative model could come with a set of control points(and eventually weights) that define the shape of the curve. In this case, the difference between waypoints and control points is that the former are the points that the model is supposed to reach, while the latter are the points to which the model's curve is attracted to.
+\paragraph{Numerical approximations}
+The arc length $\sym{arclength}_i$ is computed by Gauss--Legendre quadrature with $\sym{ngl}$ nodes, and $\sym{normarc}_i^{-1}$ by inverting the cumulative trapezoidal integral of $\lVert \sym{bezier}_i^{\prime}\rVert$ on a uniform grid of $\sym{nell}$ values of $\sym{curvepar}$. The gradients are computed by forward differences and assembled segment by segment: since segment $i$ depends only on $\sym{lams}_i$, $\sym{lame}_i$, $\sym{rotation}_i$ and $\sym{rotation}_{i+1}$, perturbing a variable requires recomputing only the one or two segments that contain it.
 
-% For instance, one possible spatial representation is the spline Bézier curve, which comes in handy since it doesn't always reach the target points, rather it tries to get as close as possible to them, which is what humans do when they move. The Bézier curve is defined by a set of control points, which can be used to define the shape of the curve. In order to teach a generative model to draw such lines, it is necessary to extract them from the actual path samples draw from the subjects movements.
+\paragraph{Acceptance}
+A solution is accepted when every segment meets the length constraint within a relative tolerance, $\lvert \sym{arclength}_i/\sym{amplitude}_i-1\rvert\le\sym{epsl}$; otherwise the recording is discarded.
+
+\paragraph{Extracted parameters}
+For every kept stroke $i$, the extraction stores the parameters of Table~\ref{tab:stroke_parameters}, together with the subject, the task and the position of the stroke in the recording. The lognormal parameters are the solution of Problem~\eqref{eq:lognormal_fit}, the amplitude is given by Equation~\eqref{eq:stroke_amplitude}, the end points are measured, and the directions and tangent lengths are the solution of Problem~\eqref{eq:bezier_fit}. They are enough to rebuild the stroke: the control points follow from Equation~\eqref{eq:control_points}, and the speed along the curve from the lognormal. Since consecutive segments share a direction, the end direction of stroke $i$ is also the start direction of stroke $i+1$.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Parameters stored for every stroke $i$.}
+    \label{tab:stroke_parameters}
+    \begin{tabular}{llll}
+        \toprule
+        Parameter & Meaning & Unit & Source\\
+        \midrule
+        $\sym{tzero}_i$                                          & onset time                    & s  & Problem~\eqref{eq:lognormal_fit}\\
+        $\sym{mu}_i$                                             & log-time delay                & -- & Problem~\eqref{eq:lognormal_fit}\\
+        $\sym{sigma}_i$                                          & log-response time             & -- & Problem~\eqref{eq:lognormal_fit}\\
+        $\sym{amplitude}_i$                                      & amplitude                     & m  & Equation~\eqref{eq:stroke_amplitude}\\
+        $\sym{ctrlpt}_{0,i}$                                     & start point                   & m  & measured, $\sym{position}_{\sym*{minimum}_i}$\\
+        $\sym{displacement}_i=\sym{ctrlpt}_{3,i}-\sym{ctrlpt}_{0,i}$ & displacement              & m  & measured, $\sym{position}_{\sym*{minimum}_{i+1}}-\sym{position}_{\sym*{minimum}_i}$\\
+        $\sym{direction}_i$, $\sym{direction}_{i+1}$             & start and end directions      & -- & Problem~\eqref{eq:bezier_fit}\\
+        $\sym{lams}_i$, $\sym{lame}_i$                           & start and end tangent lengths & m  & Problem~\eqref{eq:bezier_fit}\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Trajectory Filtering}
+Not all the reconstructed recordings are useful for training. Some are reconstructed poorly, while others come from an incorrect execution of the task, because of errors during the recording session. The first kind of error is easy to spot: the quality of every reconstruction is measured by the mean squared error between the recorded path and the Bézier chain, at equal arc length, and by the human-likeness index of the speed profile~\cite{coccaro}, a signal-to-noise ratio weighted by the ratio between the expected and the extracted number of strokes.
+
+The second kind of error is more insidious, because it requires a view of the whole recorded and reconstructed movement. Some hints help to spot it, such as long pauses between strokes, very short segments or sudden stops; these hints call for an inspection of the recording, but do not justify removing it by themselves. Because of the amount of data, the recordings are therefore discarded automatically only by rules that mark a failure of the model:
+\begin{itemize}
+    \item the number of kept strokes differs from the number of segments of the task (Section~\ref{sec:data_processing_system});
+    \item the $\sym{sigma}$ of a kept stroke lies on one of its bounds, or a tangent length reaches its upper bound;
+    \item the arc lengths do not meet the length constraint (Section~\ref{sec:feature_extraction});
+    \item a stroke reaches its peak speed before the previous one, an order that the timing features of the generative model cannot represent (Section~\ref{sec:features}).
+\end{itemize}
+The last rule is applied when the dataset of the generative model is built, the others during the reconstruction.
 % This software component should be able to provide the generative model with properties that are independent of the time characterization and explained by the scientific literature.
 
 \section{Generative Model}
-The generative model is trained with the dataset of movements, extended with the temporal and spatial characterizations, to learn the underlying principles of human motion. Once trained, the model can generate new movements that are similar to the original ones, by providing the path in the space and its time characterization through a velocity profile derived from the lognormal parameters. The generated movements can then be executed on the same system that collected the original data.
+The generative model is trained on the stroke parameters extracted from the recorded movements. Its role is to express a probability distribution over them close enough to the real one that the movements rebuilt from generated parameters resemble real movements. This section describes the features through which the network sees the strokes, its architecture and its training; its evaluation is the subject of Chapter~\ref{ch:validation}.
+
+\subsection{Features}
+\label{sec:features}
+The network does not receive the stroke parameters of Table~\ref{tab:stroke_parameters} as they are. Every parameter is mapped to one or more features by a transformation that can be inverted given the inputs of the stroke and the previous stroke, so that every output of the network can be turned back into a stroke and every stroke of the dataset into network outputs. The features are listed in Table~\ref{tab:network_features}; this subsection gives their definitions and the reasons behind them.
+
+\paragraph{Principles}
+The transformations follow four principles.
+\begin{itemize}
+    \item \emph{Translation invariance.} Every vector is taken from the start of its stroke, so the features do not depend on where the movement takes place.
+    \item \emph{Rotation invariance.} Every geometric output is expressed in a frame built from the inputs and from the stroke itself, so that rotating a whole recording leaves the outputs unchanged, and the orientation of a task is carried only by the vector inputs. This makes the rotation augmentation of Section~\ref{sec:training_procedure} consistent: a rotated recording has rotated inputs and the same outputs, so the network learns the shape of the strokes rather than their orientation, which would not transfer to a task drawn in a new orientation.
+    \item \emph{Scale invariance.} Lengths are divided by a length of the same stroke, and times by a time of the previous stroke. The same task is drawn at different sizes and speeds by different subjects and in different repetitions; ratios make strokes of different tasks and subjects comparable, and let the network learn how a stroke deviates from its target rather than its absolute size.
+    \item \emph{Logarithms of positive quantities.} A positive quantity is learned through its logarithm, which maps $(0,\infty)$ onto $\mathbb R$: any value sampled from the mixture is rebuilt into a valid parameter, and the multiplicative, right-skewed variability of durations and lengths becomes additive and closer to symmetric, which suits the Gaussian components of the mixture.
+\end{itemize}
+
+\paragraph{Waypoint vectors and frames}
+Let $\sym{waypoint}_0,\dots,\sym{waypoint}_{\sym*{nsegments}}$ be the waypoints of a task: stroke $i=0,\dots,\sym{nsegments}-1$ starts at $\sym{ctrlpt}_{0,i}$ and aims at $\sym{waypoint}_{i+1}$. Its waypoint vectors are
+\begin{equation}
+    \sym{wpvec}_i=\sym{waypoint}_{i+1}-\sym{ctrlpt}_{0,i},\qquad \sym{wpnext}_i=\sym{waypoint}_{\min(i+2,\sym*{nsegments})}-\sym{ctrlpt}_{0,i},
+    \label{eq:waypoint_vectors}
+\end{equation}
+the vectors from its start to the waypoint it aims at and to the following one, which coincide for the last stroke. The reference plane of a stroke is the plane of its two waypoint vectors, with unit normal $\sym{refnormal}_i\propto \sym{wpvec}_i\times \sym{wpnext}_i$. Where the two vectors are nearly aligned, as in the last stroke, $\sym{refnormal}_i$ is the normal of the plane of the incoming direction $\sym{direction}_i$ and $\sym{wpvec}_i$ for every stroke after the first, and otherwise of the plane through $\sym{wpvec}_i$ and the vertical. Two orthonormal frames are built from it: the waypoint frame $(\sym{wpframe}_1,\sym{wpframe}_2,\sym{wpframe}_3)$, with $\sym{wpframe}_1$ along $\sym{wpvec}_i$, and the stroke frame $(\sym{strokeframe}_1,\sym{strokeframe}_2,\sym{strokeframe}_3)$, with $\sym{strokeframe}_1$ along the chord $\sym{displacement}_i$. In both, the third axis is $\sym{refnormal}_i$ made orthogonal to the first, and the second completes a right-handed frame. Both frames depend only on vectors that rotate with the recording, so the coordinates of a vector in them are invariant. The only exception is the fallback on the vertical, used when a stroke has neither a second waypoint off its line nor an incoming direction, as in the tasks made of a single stroke; there the outputs depend on the orientation of $\sym{wpvec}_i$, which the network receives as an input.
+
+\paragraph{Inputs}
+The conditioning inputs of stroke $i$ are $\sym{wpvec}_i$, $\sym{wpnext}_i$ and a flag that marks the first stroke of a recording. In training $\sym{ctrlpt}_{0,i}$ is the measured start of the stroke, in generation the end of the previous generated stroke: the network always sees the waypoint from where the stroke actually starts, so it can compensate the errors of the previous strokes instead of accumulating them. The second vector tells the network where the movement goes next, which can affect how the current stroke ends. The flag separates the first stroke, which has no previous stroke and a free start direction. No input describes the subject, or the orientation of the task with respect to the subject or to gravity: such inputs lowered the loss on the known tasks and raised it on unseen ones (Chapter~\ref{ch:validation}), as the network used them to memorise the training tasks.
+
+\paragraph{Previous-stroke inputs}
+The recurrent input of stroke $i$ is made of features of stroke $i-1$: its timing and shape outputs $\sym{peakdelay}_{i-1}$, $\sym{mu}_{i-1}$, $\ln\sym{sigma}_{i-1}$ and $\ln(\sym{lams}_{i-1}/\lVert\sym{displacement}_{i-1}\rVert)$, its relative end tangent length $\ln(\sym{lame}_{i-1}/\lVert\sym{displacement}_{i-1}\rVert)$, and its two directions $\sym{direction}_{i-1}$, $\sym{direction}_i$ in the device frame, which rotate with the recording like the waypoint vectors. They are zero for the first stroke, and $\sym{peakdelay}_{i-1}$ is zero also for the second one, since the first stroke has no peak delay. The previous stroke tells the network the speed and the size at which the subject is drawing, which tend to persist within a recording and which the waypoints cannot provide.
+
+\paragraph{Timing}
+The onset is replaced by the delay between the speed peaks of consecutive strokes, relative to the previous stroke:
+\begin{equation}
+    \sym{peakdelay}_i=\ln\left(\sym{tpeak}_i-\sym{tpeak}_{i-1}\right)-\sym{mu}_{i-1},\qquad
+    \sym{tpeak}_i=\sym{tzero}_i+e^{\sym{mu}_i-\sym{sigma}_i^2}.
+    \label{eq:peak_delay}
+\end{equation}
+The onset lies where the speed is close to zero, so it is weakly constrained by the fit, while the peak is the most visible point of the speed profile. The delay between two peaks measures how much consecutive strokes overlap, and dividing it by $e^{\sym{mu}_{i-1}}$, the time the previous stroke takes to cover half of its amplitude, makes it independent of the speed of the movement. The logarithm requires the peaks to be in order, so the recordings where a stroke peaks before the previous one are discarded. The onset is rebuilt after $\sym{mu}_i$ and $\sym{sigma}_i$, as $\sym{tzero}_i=\sym{tpeak}_{i-1}+e^{\sym{peakdelay}_i+\sym{mu}_{i-1}}-e^{\sym{mu}_i-\sym{sigma}_i^2}$. The first stroke has no previous peak, and its onset is set to a constant $\sym{tfirst}$: only the timing between strokes matters, while the absolute onset depends on when the recording started.
+
+\paragraph{Lognormal shape}
+$\sym{mu}_i$ is kept as it is, since it is already the logarithm of a time, and $\sym{sigma}_i$ is learned as $\ln\sym{sigma}_i$.
+
+\paragraph{Displacement}
+The chord is described by its length relative to the waypoint vector and by its direction in the waypoint frame,
+\begin{equation}
+    \sym{extent}_i=\ln\frac{\lVert\sym{displacement}_i\rVert}{\lVert\sym{wpvec}_i\rVert},\qquad
+    \sym{azimuth}_i=\operatorname{atan2}\left(\sym{chorddir}_i\cdot \sym{wpframe}_2,\ \sym{chorddir}_i\cdot \sym{wpframe}_1\right),\qquad
+    \sym{elevation}_i=\arcsin\left(\sym{chorddir}_i\cdot \sym{wpframe}_3\right),\qquad
+    \sym{chorddir}_i=\frac{\sym{displacement}_i}{\lVert\sym{displacement}_i\rVert}.
+    \label{eq:displacement_features}
+\end{equation}
+A stroke aims at its waypoint, so $\sym{displacement}_i\approx \sym{wpvec}_i$, and $(\sym{extent}_i,\sym{azimuth}_i,\sym{elevation}_i)=(0,0,0)$ is a stroke that ends exactly on it: the network learns how far the stroke falls short or goes beyond, $\sym{extent}_i$, and how much it deviates within the reference plane, $\sym{azimuth}_i$, and out of it, $\sym{elevation}_i$. Since these deviations are small, $\sym{azimuth}_i$ stays far from $\pm\pi$, where it wraps around.
+
+\paragraph{Tangent handles}
+A handle, of length $\lambda$ and direction $u$, is described by its components in the stroke frame, relative to the chord and compressed by the inverse hyperbolic sine, applied to every component:
+\begin{equation}
+    \sym{handle}(\lambda,u)=\operatorname{asinh}\left(\frac{\lambda}{\sym{handlescale}\lVert\sym{displacement}_i\rVert}
+        \begin{bmatrix}u\cdot \sym{strokeframe}_1\\ u\cdot \sym{strokeframe}_2\\ u\cdot \sym{strokeframe}_3\end{bmatrix}\right),\qquad
+    \sym{handle}_{e,i}=\sym{handle}\left(\sym{lame}_i,\sym{direction}_{i+1}\right),\qquad
+    \sym{handle}_{s,0}=\sym{handle}\left(\sym{lams}_0,\sym{direction}_0\right).
+    \label{eq:handle_features}
+\end{equation}
+Dividing by the chord makes the handle independent of the size of the stroke, as the shape of a curve does not depend on its size. In the stroke frame a straight stroke has both handles along $\sym{strokeframe}_1$, and the bending of the stroke appears in the components along $\sym{strokeframe}_2$ and $\sym{strokeframe}_3$. The components are preferred to a length and a direction because a short handle, as in nearly straight strokes and sharp arrivals, where $\lambda$ reaches $\sym{lammin}$, hardly affects the curve, so its direction is poorly determined by the fit: as a unit vector it would be a noisy target, while its components go to zero continuously. The inverse hyperbolic sine is linear for handles much shorter than $\sym{handlescale}\lVert\sym{displacement}_i\rVert$ and logarithmic for longer ones: like a logarithm it compresses the long tail of the long handles, but it keeps the sign and is defined at zero.
+
+The start handle of the first stroke, whose direction is free, is described in the same way, by $\sym{handle}_{s,0}$. For a later stroke the start direction is the end direction of the previous one, by the $\sym{gone}$ constraint, and only the relative length $\ln(\sym{lams}_i/\lVert\sym{displacement}_i\rVert)$ is learned, so that $\sym{gone}$ continuity holds by construction in generation instead of being learned.
+
+The amplitude and the start point are not learned: $\sym{ctrlpt}_{0,i}$ is the end of the previous stroke, or $\sym{waypoint}_0$ for the first one, and $\sym{amplitude}_i$ is the arc length of the rebuilt curve, by the constraint $\sym{arclength}_i=\sym{amplitude}_i$ of Problem~\eqref{eq:bezier_fit}. The outputs have thirteen dimensions: three exist only for the first stroke ($\sym{handle}_{s,0}$) and two only for the later ones ($\sym{peakdelay}_i$ and the relative start tangent length); the dimensions that a stroke lacks are left out of its likelihood (Section~\ref{sec:training_procedure}).
+
+\paragraph{Standardisation}
+Every scalar feature is standardised to zero mean and unit variance, with the statistics of the training strokes in which it exists. The vector inputs are only divided by a common scale, the root mean square of their components, one for the waypoint vectors and one for the directions, without subtracting a mean: a scale per component would turn a rotation into a distortion, and a mean would move the origin of the stroke away from zero. The first-stroke flag is left as it is.
+
+\paragraph{Consistency check}
+Before an experiment starts, every stroke of the dataset is rebuilt from its output features, with its recorded inputs and previous stroke, and compared with the extracted parameters; the experiment is not started unless they coincide within a numerical tolerance.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Features of stroke $i$. The previous-stroke inputs are the features of stroke $i-1$; the column Strokes gives the strokes for which an output is a target.}
+    \label{tab:network_features}
+    \begin{tabular}{llll}
+        \toprule
+        Feature & Definition & Strokes & Role\\
+        \midrule
+        $\sym{wpvec}_i$, $\sym{wpnext}_i$                          & Equation~\eqref{eq:waypoint_vectors}      & all   & input\\
+        first-stroke flag                                          & $1$ if $i=0$, $0$ otherwise               & all   & input\\
+        $\sym{peakdelay}_i$                                        & Equation~\eqref{eq:peak_delay}            & later & output, previous\\
+        $\sym{mu}_i$                                               & as extracted                              & all   & output, previous\\
+        $\ln\sym{sigma}_i$                                         & --                                        & all   & output, previous\\
+        $\sym{extent}_i$, $\sym{azimuth}_i$, $\sym{elevation}_i$   & Equation~\eqref{eq:displacement_features} & all   & output\\
+        $\sym{handle}_{s,0}$                                       & Equation~\eqref{eq:handle_features}       & first & output\\
+        $\ln(\sym{lams}_i/\lVert\sym{displacement}_i\rVert)$       & --                                        & later & output, previous\\
+        $\sym{handle}_{e,i}$                                       & Equation~\eqref{eq:handle_features}       & all   & output\\
+        $\ln(\sym{lame}_i/\lVert\sym{displacement}_i\rVert)$       & --                                        & all   & previous\\
+        $\sym{direction}_i$, $\sym{direction}_{i+1}$               & device frame                              & all   & previous\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Network Architecture}
+\label{sec:network_architecture}
+The network implements the recurrent mixture density network of Section~\ref{sec:data_generation_system}: a recurrent layer keeps the state of the recording, and a mixture density head maps the state of every stroke to a Gaussian mixture over its output features. For stroke $i$, let $\sym{condstep}_i$ be the conditioning inputs, $\sym{previn}_{i-1}$ the previous-stroke inputs, computed from stroke $i-1$, and $\sym{obs}_i\in\mathbb R^{\sym{dimension}}$ the output features of Section~\ref{sec:features}, all standardised, with $\sym{dimension}=13$. As in Section~\ref{sec:data_generation_system}, $\sym{condstep}_i$ is the part of the condition relevant to the stroke and $\sym{obs}_i$ is the element of the sequence.
+
+\paragraph{Layers}
+The two inputs are concatenated and read by a long short-term memory (LSTM) layer~\cite{hochreiter1997long}, followed by a fully connected trunk layer and by the hidden layer of the head:
+\begin{equation}
+    \begin{aligned}
+        \sym{lstmin}_i &= \left[\sym{condstep}_i;\ \sym{previn}_{i-1}\right],\\
+        \left(\sym{state}_i, \sym{cellstate}_i\right) &= \operatorname{LSTM}\left(\sym{lstmin}_i;\ \sym{state}_{i-1}, \sym{cellstate}_{i-1}\right),
+            \qquad \sym{state}_{-1}=\sym{cellstate}_{-1}=0,\\
+        \sym{trunkout}_i &= \operatorname{drop}\left(\operatorname{ReLU}\left(\sym{weights}_g \sym{state}_i+\sym{bias}_g\right)\right),\\
+        \sym{headhidden}_i &= \operatorname{drop}\left(\operatorname{ReLU}\left(\sym{weights}_a \sym{trunkout}_i+\sym{bias}_a\right)\right),
+    \end{aligned}
+    \label{eq:network_layers}
+\end{equation}
+where $\sym{state}_i$ and $\sym{cellstate}_i$ are the hidden and cell states of the LSTM and $\operatorname{drop}$ is dropout~\cite{srivastava2014dropout}, active only in training. The state is reset at the start of every recording and carried along its strokes, so $\sym{state}_i$ plays the role of the state of Equation~\eqref{eq:recurrent_state}: it summarises the strokes already drawn, while the previous stroke also enters explicitly through $\sym{previn}_{i-1}$. A recording contains one to three strokes, so the history is short; the state adds what the previous stroke alone does not carry, such as the strokes before it.
+
+\paragraph{Mixture density head}
+Three linear layers map $\sym{headhidden}_i$ to the parameters of a mixture of $\sym{ncomp}$ Gaussian components:
+\begin{equation}
+    \begin{gathered}
+        \sym{mixweight}_i=\operatorname{softmax}\left(\sym{weights}_\pi \sym{headhidden}_i+\sym{bias}_\pi\right),\qquad
+        \sym{mixmean}_{i,k}=\sym{weights}_{m,k}\sym{headhidden}_i+\sym{bias}_{m,k},\\
+        \left(\sym{mixchol}_{i,k}\right)_{jl}=
+        \begin{cases}
+            \operatorname{softplus}\left(\sym{rawfactor}_{i,k,jj}\right)+\sym{diagfloor}, & j=l,\\
+            \sym{rawfactor}_{i,k,jl}, & j>l,\\
+            0, & j<l,
+        \end{cases}
+    \end{gathered}
+    \label{eq:mdn_head}
+\end{equation}
+where $\sym{rawfactor}_{i,k}=\sym{weights}_{C,k}\sym{headhidden}_i+\sym{bias}_{C,k}$ are the $\sym{dimension}(\sym{dimension}+1)/2$ free entries of the lower-triangular factor of component $k$. The softmax makes the weights positive with unit sum; the softplus and the floor $\sym{diagfloor}$ keep the diagonal of every factor positive, so every covariance $\sym{covariance}_{i,k}=\sym{mixchol}_{i,k}\sym{mixchol}_{i,k}^\top$ is positive definite by construction. Working with the Cholesky factor gives the log-density and the samples without inverting a matrix, through triangular solves and products. The covariances are full rather than diagonal because the output features are correlated, the strongest case being the trade-off between $\sym{mu}$ and $\sym{sigma}$; a diagonal covariance would have to approximate every correlation with additional components.
+
+\paragraph{Initialisation}
+The head starts from a mixture that already covers the training targets. The biases of the means spread the $\sym{ncomp}$ components evenly between the smallest and the largest value of every standardised target, and the biases of the factors make every covariance start as the diagonal of the target variances; the weights of the factor layer are scaled down by a small factor, so that the initial covariances hardly depend on the input. The other hidden layers use the initialisation of He et al.~\cite{he2015delving}, suited to ReLU layers, and the output layers that of Glorot and Bengio~\cite{glorot2010understanding}, with zero biases; the LSTM keeps the default initialisation of the library. A mixture that starts too narrow or too wide would give a large initial loss and large gradients.
+
+\paragraph{Hyperparameters}
+The width of the LSTM, which is also that of the trunk, the width of the hidden layer of the head, the number of components $\sym{ncomp}$ and the dropout rate are hyperparameters, chosen by the search of Section~\ref{sec:training_procedure}; their values are reported in Chapter~\ref{ch:validation}.
+
+\paragraph{Sampling}
+In generation the network runs one stroke at a time. The component is drawn with probabilities proportional to $\sym{mixweight}_{i,k}^{1/(1-\sym*{determinism})}$ and the features as $\sym{obs}_i=\sym{mixmean}_{i,k}+(1-\sym{determinism})\,\sym{mixchol}_{i,k}\sym{stdnoise}$, with $\sym{stdnoise}\sim\sym{gaussian}(0,I)$, where $\sym{determinism}\in[0,1]$ is a determinism parameter: $\sym{determinism}=0$ draws from the predicted mixture, larger values favour the most probable components and shrink the spread, and $\sym{determinism}=1$ returns the mean of the most probable component. The sampled features are turned back into a stroke as in Section~\ref{sec:features}, with $\sym{sigma}$ and the tangent lengths kept above the smallest values of the training strokes, and the stroke becomes the previous stroke of the next one.
+
+\subsection{Training Procedure}
+\label{sec:training_procedure}
+
+\paragraph{Data split}
+The tasks are divided into training, validation and test tasks, and the validation and test tasks are never seen in training. The validation loss therefore measures how the network generalises to new tasks, which is the purpose of the generator, rather than to new repetitions of known ones. The standardisation statistics come from the training tasks alone. The assignment of the tasks is reported in Chapter~\ref{ch:validation}.
+
+\paragraph{Batches}
+A batch is made of whole recordings, shuffled at every epoch, and the strokes of every recording are processed in order, carrying the state of the LSTM. The previous-stroke inputs are the recorded ones (teacher forcing, Section~\ref{sec:data_generation_system}), so all the strokes of a batch are computed in a single pass.
+
+\paragraph{Loss}
+The network is trained by maximum likelihood: the loss is the negative log-likelihood of the recorded output features under the predicted mixture, averaged over the $\sym{nbatch}$ strokes of a batch,
+\begin{equation}
+    \sym{loss}(\sym{modelparams})=-\frac1{\sym{nbatch}}\sum_{i=1}^{\sym{nbatch}}\ln \sym{qtheta}\left(\sym{obs}_{i,\sym*{dimset}_i};\,\sym{state}_i\right),\qquad
+    \sym{qtheta}\left(\sym{obs}_{\sym*{dimset}};\,\sym{state}\right)=\sum_{k=1}^{\sym{ncomp}}\sym{mixweight}_k\,\sym{gaussian}\left(\sym{obs}_{\sym*{dimset}};\ \sym{mixmean}_{k,S},\ \sym{covariance}_{k,SS}\right),
+    \label{eq:nll_loss}
+\end{equation}
+where $\sym{dimset}_i$ is the set of the output dimensions that exist for stroke $i$, discussed below, and $\sym{mixmean}_{k,S}$ and $\sym{covariance}_{k,SS}$ are the entries of the mean and of the covariance on those dimensions. The sum over the components is computed in the log domain,
+\begin{equation}
+    \begin{gathered}
+        -\ln \sym{qtheta}\left(\sym{obs}_{\sym*{dimset}};\,\sym{state}\right)=-\operatorname{LSE}_k\left[\ln\sym{mixweight}_k+\ln\sym{gaussian}\left(\sym{obs}_{\sym*{dimset}};\ \sym{mixmean}_{k,S},\ \sym{covariance}_{k,SS}\right)\right],\\
+        \operatorname{LSE}_k(\chi_k)=\chi^*+\ln\sum_k e^{\chi_k-\chi^*},\qquad \chi^*=\max_k \chi_k,
+    \end{gathered}
+\end{equation}
+since the density of a single component can underflow when the stroke lies far from its mean. With $\sym{mixchol}$ the Cholesky factor of the covariance, the log-density of a component is
+\begin{equation}
+    \ln\sym{gaussian}\left(\sym{obs};\ \sym{mixmean},\ \sym{mixchol}\sym{mixchol}^\top\right)=-\frac12\left\lVert \sym{mixchol}^{-1}(\sym{obs}-\sym{mixmean})\right\rVert^2-\sum_j\ln \sym{mixchol}_{jj}-\frac{|\sym{dimset}|}2\ln2\pi.
+\end{equation}
+
+\paragraph{First and later strokes}
+The network predicts the same $\sym{dimension}$ output dimensions for every stroke, but not all of them exist for every stroke: the start handle $\sym{handle}_{s,0}$ exists only for the first stroke of a recording, while $\sym{peakdelay}_i$ and the relative start tangent length exist only for the later ones, whose start direction is fixed by the previous stroke. The loss of a stroke is therefore computed on the marginal of the predicted mixture over the dimensions $\sym{dimset}_i$ that exist for it, eleven for a first stroke and ten for a later one. The marginal of a mixture is the mixture of the marginals with the same weights, and the marginal of a Gaussian keeps the entries of the mean and of the covariance on the retained dimensions, as in Equation~\eqref{eq:nll_loss}. The Cholesky factor of $\sym{covariance}_{k,SS}$ is obtained without forming the covariance, whose condition number is the square of that of its factor: with $\sym{mixchol}_{k,S}$ the rows of $\sym{mixchol}_k$ in $S$, the QR decomposition $\sym{mixchol}_{k,S}^\top=QR$ gives $\sym{covariance}_{k,SS}=\sym{mixchol}_{k,S}\sym{mixchol}_{k,S}^\top=R^\top Q^\top QR=R^\top R$, so $R^\top$, with its columns changed in sign where its diagonal is negative, is the required factor.
+
+A single network thus learns both kinds of stroke and shares between them everything they have in common: the layers, and the ten dimensions that exist for both. A placeholder value for the missing dimensions would instead be a target that the network could predict exactly: it would be rewarded for giving them the smallest variance allowed, an easy gain that would dominate the loss and distort the correlations with the real dimensions. With the marginal, the prediction on the missing dimensions has no effect on the loss of the stroke, and the rebuild of Section~\ref{sec:features} ignores it in generation. As a consequence, the losses of first and later strokes are densities over spaces of different dimension, and are not compared with each other.
+
+\paragraph{Regularisation}
+Besides dropout, the training uses five measures.
+\begin{itemize}
+    \item \emph{Weight decay}: an $L_2$ penalty on the weights, added to the gradient.
+    \item \emph{Gradient clipping}: the global norm of the gradient is clipped to a threshold~\cite{pascanu2013difficulty}, which bounds the update caused by strokes with a very low likelihood.
+    \item \emph{Noise on the previous stroke}: Gaussian noise with a constant standard deviation, in standardised units, is added to the previous-stroke inputs that exist, during the whole training. In generation the network receives its own samples instead of recorded strokes, and the noise trains it to tolerate their errors rather than to trust the previous stroke exactly, a mismatch between training and generation known as exposure bias~\cite{bengio2015scheduled}. Unlike the noise on the waypoints, it is not reduced over the epochs, since the errors it represents are present throughout generation, while the waypoints are exact.
+    \item \emph{Noise on the waypoints}: during the first epochs Gaussian noise is also added to the waypoint vectors, with a standard deviation that decreases linearly to zero; no checkpoint is selected during this schedule.
+    \item \emph{Rotation augmentation}: with a given probability, every recording of a batch is turned by a random rotation, drawn uniformly among all rotations when the largest angle is $180^\circ$. All the vector inputs of all its strokes turn together, while the outputs do not change, being expressed in frames built from the inputs (Section~\ref{sec:features}); the network learns that only the arrangement of the waypoints matters, and not its orientation.
+\end{itemize}
+
+\paragraph{Optimisation and model selection}
+The weights are optimised with Adam~\cite{kingma2015adam} at a constant learning rate. After every epoch the loss is evaluated on the validation tasks, with dropout disabled and without noise or rotations; the weights with the lowest validation loss are saved and restored at the end. The training stops when the validation loss has not improved for a given number of epochs, or after a maximum number of epochs. Every configuration is trained with several seeds, which set the initialisation, the order of the batches, the rotations and the noise, and its results are averaged over the seeds.
+
+\paragraph{Hyperparameter search}
+The architecture hyperparameters of Section~\ref{sec:network_architecture}, the number of recordings per batch, the learning rate, the weight decay, the clipping threshold, the probability of the rotations and the standard deviation of the noise on the previous stroke are chosen by a grid search: every combination is trained with every seed, and the configuration is chosen on the validation loss averaged over its seeds. The grid, the chosen values and the effect of every hyperparameter are reported in Chapter~\ref{ch:validation}.
+
+\paragraph{Evaluation}
+Besides the loss, the software evaluates a trained network on the strokes it generates, through the precision, density and coverage metrics~\cite{naeem2020reliable}: precision and density measure the fidelity of the generated strokes, that is, how close they lie to the recorded ones, while coverage measures their diversity, that is, how much of the variety of the recorded strokes they reproduce. These metrics and their results are presented in Chapter~\ref{ch:validation}.
 
 %==============================================================================
 % 4. Experimental Validation
 %==============================================================================
 \chapter{Experimental Validation}
+\label{ch:validation}
+This chapter discusses the reasons behind the settings of certain hyperparameters, the design of the task, the experimental protocol, the result of the evaluation, an analysis of the experimental data with the corresponding statistical analysis and, finally, an overall evaluation of the system.
 \section{Task Design}
-The goal of the experiment campaign is relatively simple: the collection of a dataset of rapid and natural human movements. However, in order to obtain a dataset of sort, it is mandatory to provide the same task to each subject. Nonetheless, the same input must be grasped equally by different subjects. Thus, the deletion of ambiguity in task definition is imperative.
+Each task consists of a sequence of waypoints that the subject first learns with the guidance of the haptic device and the visual feedback, which then reproduces without any of the two. The tasks were designed to meet two requirements. First, their difficulty should be controlled through the properties of the waypoints, according to the principles of motor planning and learning reviewed in Chapter~\ref{ch:sota}. Second, the recorded movements should be decomposable into strokes that can be associated with pairs of consecutive waypoints.
 
-\subsection{Waypoint Definition}
-As previously mentioned, a path is defined as an ordered sequence of points in the space, called waypoints, each defined by its position in the space. Visually, they are represented through spheres, which size is a trade-off between the accuracy of the collected data and the naturalness of the user's movements. However, even though the user should try to follow the path by crossing the waypoints, some deviation from them is to be expected, since no human movement ever perfectly follows a path. In the same way, a generative model should think of waypoints as a reference, akin to an attractor, rather than a strict constraint.
+\paragraph{Difficulty}
+How easily a task is memorised depends on the arrangement of its waypoints. Their number determines the load on visuospatial working memory, which maintains spatial representations for a few seconds~\cite[p.~1292]{shohamy2021}; according to Senatore, the sequence of points to reach is precisely what is acquired in the early stage of learning~\cite[pp.~34--38]{senatore2012}. Semantic content reduces this load. A letter is thought to be stored as an effector-independent representation, which allows it to keep its shape when written with a different effector or in a different plane~\cites[pp.~726--727]{wolpert2021}[p.~38]{senatore2012}, whereas a path without meaning has to be learned from scratch. Coplanarity and the orientation of the plane affect how the waypoints are transferred from the display to the workspace: the display provides no binocular disparity~\cite[pp.~550--552]{gilbert2021}, and depth is the direction in which vision is least reliable~\cite[p.~720]{wolpert2021}. Waypoints lying on a plane inclined with respect to the table on which the device rests are therefore expected to be harder to reproduce than waypoints on a plane parallel to the display.
 
-A path of two waypoints is simply a straight line between the two. On the other hand, a path of three waypoints is interpretable as a curve, since the user is supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them: the result is a curve that starts from the first waypoint, gets near the second one, and ends almost on the third one. The same principle applies to paths of more than three waypoints, which are interpreted as a sequence of curves, which curvature is inversely related to the alignment of the waypoints.
+\paragraph{Segmentation}
+Consecutive strokes are separated by minima of the speed profile, so the waypoints are arranged to induce a minimum near each of them. Two factors slow the hand down near a waypoint: the speed decreases where the curvature of the path increases, according to the two-thirds power law~\cite{lacquaniti1983,viviani1995}, and reaching a target accurately requires a lower speed~\cite{fitts1954}. Non-collinearity alone is not sufficient, since three non-collinear points always lie on a circle, and a single stroke, whose path is a circular arc, can traverse them without any speed minimum. The direction of motion must therefore change by a sufficiently large angle at each waypoint, so that the path has a curvature peak there. Paths of constant or slowly varying curvature, such as circles and spirals, do not meet this condition, since the two-thirds power law predicts an almost constant or monotonically varying speed along them. Finally, as learning proceeds, point-to-point movements tend to become continuous and smooth~\cite[pp.~37--38]{senatore2012}, so the association between strokes and waypoints is expected to be strongest in the early repetitions.
 
-The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space. 
+\subsection{Single stroke}
+Single stroke tasks have been introduced to have some representation of smooth straight movements. Not only these tasks are easy for subjects to start the campaign, but they also provide an insight on movements where there is only one stroke expected. 
 
-\subsection{Path Description}
+Three such tasks have been designed, where the two waypoint lie on a specific plane: parallel to the subject's transverse plane, to imitate writing on the table, parallel to their coronal one too, to imitate writing on air. Finally, another tasks relying on a plane that is not parallel to either of the two, which imitates retracting the hand.
+\subsection{Two strokes}
+\subsection{Letters}
 
-A path, in simple terms, is an ordered sequence of waypoints. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. However, a human's perception of a three-dimensional space is not mathematical, and thus it is not as accurate as the model one. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path.
+% \section{Task Design}
+% As aforementioned, the design of the tasks must take into account various difficulties the subjects may face when executing the tasks. First, memorizing the task may not be immediate, and its complexity depends upon the disposition of the waypoints: how many of waypoints, if there are patterns like coplanarity, semantic information, curvature, and the angle of the plan which respect to the table where the haptic device lies in case they are coplanar. 
 
-A path could represent a common task that a human subject may perform in their daily life, such as moving an object from one place to another, or using a particular tool. The path should be designed to be as intuitive and natural as possible, eventually combining the geometrical description with a semantic one, ensuring that the subject grasps and performs it smoothly, avoiding unnatural movements that could poison the collected data.
-
-\subparagraph{Visual \& Haptic Feedback} An intuitive representation should make use of the human natural instinct to merge different sensory inputs to form a more complete perception of the environment. In this case the two only classes of sensory inputs available are the visual and haptic ones, since they are the only two that are directly transformed into positional information in the perceived space by the motor cortex. 
-
-The visual feedback is shown to the subject through the ordered sequence of spheres projected in a simulated three-dimensional environment in the screen. The depth perception is given by the perspective of the camera, which can be moved by the subject to change their point of view. 
-
-The haptic feedback is given to the subject through the haptic device's actuators, which apply forces to the subject's hand to guide them towards the path. These forces are applied toward the next waypoint, and let the user stay on each waypoint to give them time to memorize the positions of the waypoints. The more the user's ability to follow the path increases, the less the haptic feedback is applied. More importantly, the rest time on the waypoints is zeroed, since the user must follow the path without stopping on the waypoints. This should happen some time before the haptic feedback is removed, in order to let the user get used to the fact that they are supposed to follow the path without stopping on the waypoints.
-
-\subparagraph{Motor Representation} Both the haptic feedback and the visual feedback are not used during the recording phase, but rather in a previous phase called pre-training. During this step, the user is aided in following the path through the visual and haptic feedback, until a certain level of proficiency is reached. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. Once this representation is formed, the user starts to follow the path without any aid, in order to test this proficiency, the feedbacks are slowly removed, until they are completely disabled. The user is then asked to follow the path without any aid, while the system collects their movements. 
-
-\subparagraph{Curvature Representation}
-The only issue with representing a path only by a sequence of points is that it only takes into account direct links between waypoints. Humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution. This aspect must be extracted from the dataset and learned by the generative model, since it is a fundamental aspect of human motion.
-
-An idea to make this aspect stand out from the collected data could be the introduction of arrows in the visual environment, although this means crowding it with more information that could be distracting or hard to interpret for the user. Also, this requires defining other tunable parameters, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, at a specific size and orientation. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. In the end, it is mandatory to explain to the user that they are supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them, since this would lead to unnatural movements: the user should be encouraged to follow the path smoothly.
-
-\subsection{Path Taxonomy}
-The paths that will be shown to the subject during the experiment are grouped into the following categories: 
-\begin{itemize}
-    \item Burst: impulsive movements. Simple paths that help the subject getting used to the haptic device. 
-    \begin{itemize}
-        \item Straight line over the $XY, YZ$ or $XZ$ planes
-        \item Semicircumference over the $XY, YZ$ or $XZ$ planes
-    \end{itemize}
-    \item Geometric: two- and three-dimensional round geometric shapes
-    \begin{itemize}
-        \item Helix, growing over the $X$ or $Y$ axes
-        \item Spiral, in the $XY$ plane
-        \item Ellipses, one in the $XY$ plane and the other in the $XZ$ plane
-        \item Circle, one in the $XY$ plane and the other in the $XZ$ plane
-    \end{itemize}
-    \item Symbol: letters of an alphabet
-    \begin{itemize}
-        \item Cursive lowercase L $\left(\ell\right)$ in both the $XY$ and $XZ$ planes
-        \item Print uppercase S in an oblique plane in both senses
-        \item Cursive Greek Phi $\left(\varphi\right)$ in the $XY$ plane
-        \item Print uppercase $N$ which segments differ in plane 
-    \end{itemize}
-\end{itemize}
-\section{Evaluation Metrics}
+% Second, no more than two waypoints can be collinear. The waypoints dispositions must make it impossible for the subject to traverse more than two waypoints using only a single stroke. Of course, two points will always be collinear, but the third waypoint shall force the user to curve the movement, decreasing the movement speed temporarily until the direction of motion goes toward the next point. As the subject hand speeds up again, the speed profile will increase again, thus forming a minimum. 
 
 \section{Experimental Protocol}
 The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.
@@ -594,6 +1137,56 @@ Those are the same inputs and outputs of the generative model, with the exceptio
 % \begin{equation}
 %     L_{i} = 
 % \end{equation}
+\subsection{Waypoint Definition}
+As previously mentioned, a path is defined as an ordered sequence of points in the space, called waypoints, each defined by its position in the space. Visually, they are represented through spheres, which size is a trade-off between the accuracy of the collected data and the naturalness of the user's movements. However, even though the user should try to follow the path by crossing the waypoints, some deviation from them is to be expected, since no human movement ever perfectly follows a path. In the same way, a generative model should think of waypoints as a reference, akin to an attractor, rather than a strict constraint.
+
+A path of two waypoints is simply a straight line between the two. On the other hand, a path of three waypoints is interpretable as a curve, since the user is supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them: the result is a curve that starts from the first waypoint, gets near the second one, and ends almost on the third one. The same principle applies to paths of more than three waypoints, which are interpreted as a sequence of curves, which curvature is inversely related to the alignment of the waypoints.
+
+The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space. 
+
+\subsection{Path Description}
+
+A path, in simple terms, is an ordered sequence of waypoints. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. However, a human's perception of a three-dimensional space is not mathematical, and thus it is not as accurate as the model one. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path.
+
+A path could represent a common task that a human subject may perform in their daily life, such as moving an object from one place to another, or using a particular tool. The path should be designed to be as intuitive and natural as possible, eventually combining the geometrical description with a semantic one, ensuring that the subject grasps and performs it smoothly, avoiding unnatural movements that could poison the collected data.
+
+\subparagraph{Visual \& Haptic Feedback} An intuitive representation should make use of the human natural instinct to merge different sensory inputs to form a more complete perception of the environment. In this case the two only classes of sensory inputs available are the visual and haptic ones, since they are the only two that are directly transformed into positional information in the perceived space by the motor cortex. 
+
+The visual feedback is shown to the subject through the ordered sequence of spheres projected in a simulated three-dimensional environment in the screen. The depth perception is given by the perspective of the camera, which can be moved by the subject to change their point of view. 
+
+The haptic feedback is given to the subject through the haptic device's actuators, which apply forces to the subject's hand to guide them towards the path. These forces are applied toward the next waypoint, and let the user stay on each waypoint to give them time to memorize the positions of the waypoints. The more the user's ability to follow the path increases, the less the haptic feedback is applied. More importantly, the rest time on the waypoints is zeroed, since the user must follow the path without stopping on the waypoints. This should happen some time before the haptic feedback is removed, in order to let the user get used to the fact that they are supposed to follow the path without stopping on the waypoints.
+
+\subparagraph{Motor Representation} Both the haptic feedback and the visual feedback are not used during the recording phase, but rather in a previous phase called pre-training. During this step, the user is aided in following the path through the visual and haptic feedback, until a certain level of proficiency is reached. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. Once this representation is formed, the user starts to follow the path without any aid, in order to test this proficiency, the feedbacks are slowly removed, until they are completely disabled. The user is then asked to follow the path without any aid, while the system collects their movements. 
+
+\subparagraph{Curvature Representation}
+The only issue with representing a path only by a sequence of points is that it only takes into account direct links between waypoints. Humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution. This aspect must be extracted from the dataset and learned by the generative model, since it is a fundamental aspect of human motion.
+
+An idea to make this aspect stand out from the collected data could be the introduction of arrows in the visual environment, although this means crowding it with more information that could be distracting or hard to interpret for the user. Also, this requires defining other tunable parameters, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, at a specific size and orientation. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. In the end, it is mandatory to explain to the user that they are supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them, since this would lead to unnatural movements: the user should be encouraged to follow the path smoothly.
+
+\subsection{Path Taxonomy}
+The paths that will be shown to the subject during the experiment are grouped into the following categories: 
+\begin{itemize}
+    \item Burst: impulsive movements. Simple paths that help the subject getting used to the haptic device. 
+    \begin{itemize}
+        \item Straight line over the $XY, YZ$ or $XZ$ planes
+        \item Semicircumference over the $XY, YZ$ or $XZ$ planes
+    \end{itemize}
+    \item Geometric: two- and three-dimensional round geometric shapes
+    \begin{itemize}
+        \item Helix, growing over the $X$ or $Y$ axes
+        \item Spiral, in the $XY$ plane
+        \item Ellipses, one in the $XY$ plane and the other in the $XZ$ plane
+        \item Circle, one in the $XY$ plane and the other in the $XZ$ plane
+    \end{itemize}
+    \item Symbol: letters of an alphabet
+    \begin{itemize}
+        \item Cursive lowercase L $\left(\ell\right)$ in both the $XY$ and $XZ$ planes
+        \item Print uppercase S in an oblique plane in both senses
+        \item Cursive Greek Phi $\left(\varphi\right)$ in the $XY$ plane
+        \item Print uppercase $N$ which segments differ in plane 
+    \end{itemize}
+\end{itemize}
+\section{Evaluation Metrics}
 
 \section{Experimental Data}
 Through the executions of the experiments, the system collects a dataset of human movements, expressed as a sequence of timestamped points in the space, with respect to the reference frame. 
@@ -612,4 +1205,10 @@ Write the conclusion here.
 % 6. Bibliography
 %==============================================================================
 \printbibliography[heading=bibnumbered]
+
+%==============================================================================
+% Appendix
+%==============================================================================
+\appendix
+\printnoidxglossary[type=symbols, style=symboltable, sort=def, title={List of Symbols}]
 \end{document}
