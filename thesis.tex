@@ -842,7 +842,7 @@ Let $\sym{waypoint}_0,\dots,\sym{waypoint}_{\sym*{nsegments}}$ be the waypoints 
 the vectors from its start to the waypoint it aims at and to the following one, which coincide for the last stroke. The reference plane of a stroke is the plane of its two waypoint vectors, with unit normal $\sym{refnormal}_i\propto \sym{wpvec}_i\times \sym{wpnext}_i$. Where the two vectors are nearly aligned, as in the last stroke, $\sym{refnormal}_i$ is the normal of the plane of the incoming direction $\sym{direction}_i$ and $\sym{wpvec}_i$ for every stroke after the first, and otherwise of the plane through $\sym{wpvec}_i$ and the vertical. Two orthonormal frames are built from it: the waypoint frame $(\sym{wpframe}_1,\sym{wpframe}_2,\sym{wpframe}_3)$, with $\sym{wpframe}_1$ along $\sym{wpvec}_i$, and the stroke frame $(\sym{strokeframe}_1,\sym{strokeframe}_2,\sym{strokeframe}_3)$, with $\sym{strokeframe}_1$ along the chord $\sym{displacement}_i$. In both, the third axis is $\sym{refnormal}_i$ made orthogonal to the first, and the second completes a right-handed frame. Both frames depend only on vectors that rotate with the recording, so the coordinates of a vector in them are invariant. The only exception is the fallback on the vertical, used when a stroke has neither a second waypoint off its line nor an incoming direction, as in the tasks made of a single stroke; there the outputs depend on the orientation of $\sym{wpvec}_i$, which the network receives as an input.
 
 \paragraph{Inputs}
-The conditioning inputs of stroke $i$ are $\sym{wpvec}_i$, $\sym{wpnext}_i$ and a flag that marks the first stroke of a recording. In training $\sym{ctrlpt}_{0,i}$ is the measured start of the stroke, in generation the end of the previous generated stroke: the network always sees the waypoint from where the stroke actually starts, so it can compensate the errors of the previous strokes instead of accumulating them. The second vector tells the network where the movement goes next, which can affect how the current stroke ends. The flag separates the first stroke, which has no previous stroke and a free start direction. No input describes the subject, or the orientation of the task with respect to the subject or to gravity: such inputs lowered the loss on the known tasks and raised it on unseen ones (Chapter~\ref{ch:validation}), as the network used them to memorise the training tasks.
+The conditioning inputs of stroke $i$ are $\sym{wpvec}_i$, $\sym{wpnext}_i$ and a flag that marks the first stroke of a recording. In training $\sym{ctrlpt}_{0,i}$ is the measured start of the stroke, in generation the end of the previous generated stroke: the network always sees the waypoint from where the stroke actually starts, so it can compensate the errors of the previous strokes instead of accumulating them. The second vector tells the network where the movement goes next, which can affect how the current stroke ends. The flag separates the first stroke, which has no previous stroke and a free start direction. No input describes the subject, or the orientation of the task with respect to the subject or to gravity: the generator is meant for new tasks, and such inputs would let the network tie its predictions to the subjects and to the orientations of the training tasks instead of to the arrangement of the waypoints.
 
 \paragraph{Previous-stroke inputs}
 The recurrent input of stroke $i$ is made of features of stroke $i-1$: its timing and shape outputs $\sym{peakdelay}_{i-1}$, $\sym{mu}_{i-1}$, $\ln\sym{sigma}_{i-1}$ and $\ln(\sym{lams}_{i-1}/\lVert\sym{displacement}_{i-1}\rVert)$, its relative end tangent length $\ln(\sym{lame}_{i-1}/\lVert\sym{displacement}_{i-1}\rVert)$, and its two directions $\sym{direction}_{i-1}$, $\sym{direction}_i$ in the device frame, which rotate with the recording like the waypoint vectors. They are zero for the first stroke, and $\sym{peakdelay}_{i-1}$ is zero also for the second one, since the first stroke has no peak delay. The previous stroke tells the network the speed and the size at which the subject is drawing, which tend to persist within a recording and which the waypoints cannot provide.
@@ -950,7 +950,7 @@ Three linear layers map $\sym{headhidden}_i$ to the parameters of a mixture of $
 where $\sym{rawfactor}_{i,k}=\sym{weights}_{C,k}\sym{headhidden}_i+\sym{bias}_{C,k}$ are the $\sym{dimension}(\sym{dimension}+1)/2$ free entries of the lower-triangular factor of component $k$. The softmax makes the weights positive with unit sum; the softplus and the floor $\sym{diagfloor}$ keep the diagonal of every factor positive, so every covariance $\sym{covariance}_{i,k}=\sym{mixchol}_{i,k}\sym{mixchol}_{i,k}^\top$ is positive definite by construction. Working with the Cholesky factor gives the log-density and the samples without inverting a matrix, through triangular solves and products. The covariances are full rather than diagonal because the output features are correlated, the strongest case being the trade-off between $\sym{mu}$ and $\sym{sigma}$; a diagonal covariance would have to approximate every correlation with additional components.
 
 \paragraph{Initialisation}
-The head starts from a mixture that already covers the training targets. The biases of the means spread the $\sym{ncomp}$ components evenly between the smallest and the largest value of every standardised target, and the biases of the factors make every covariance start as the diagonal of the target variances; the weights of the factor layer are scaled down by a small factor, so that the initial covariances hardly depend on the input. The other hidden layers use the initialisation of He et al.~\cite{he2015delving}, suited to ReLU layers, and the output layers that of Glorot and Bengio~\cite{glorot2010understanding}, with zero biases; the LSTM keeps the default initialisation of the library. A mixture that starts too narrow or too wide would give a large initial loss and large gradients.
+The head starts from a mixture that already covers the training targets. The biases of the means spread the $\sym{ncomp}$ components evenly between the smallest and the largest value of every standardised target, and the biases of the factors make every covariance start as the diagonal of the target variances; the weights of the factor layer are scaled down by a small factor, so that the initial covariances hardly depend on the input. The weights of the other hidden layers use the initialisation of He et al.~\cite{he2015delving}, suited to ReLU layers, with zero biases, and the weights of the output layers that of Glorot and Bengio~\cite{glorot2010understanding}; the biases of the mixture weights keep the default initialisation of the library, uniform in $\pm1/\sqrt{n}$ with $n$ the number of inputs of the layer, and so do all the parameters of the LSTM, uniform in $\pm1/\sqrt{h}$ with $h$ the width of its state. A mixture that starts too narrow or too wide would give a large initial loss and large gradients.
 
 \paragraph{Hyperparameters}
 The width of the LSTM, which is also that of the trunk, the width of the hidden layer of the head, the number of components $\sym{ncomp}$ and the dropout rate are hyperparameters, chosen by the search of Section~\ref{sec:training_procedure}; their values are reported in Chapter~\ref{ch:validation}.
@@ -1005,10 +1005,10 @@ Besides dropout, the training uses five measures.
 The weights are optimised with Adam~\cite{kingma2015adam} at a constant learning rate. After every epoch the loss is evaluated on the validation tasks, with dropout disabled and without noise or rotations; the weights with the lowest validation loss are saved and restored at the end. The training stops when the validation loss has not improved for a given number of epochs, or after a maximum number of epochs. Every configuration is trained with several seeds, which set the initialisation, the order of the batches, the rotations and the noise, and its results are averaged over the seeds.
 
 \paragraph{Hyperparameter search}
-The architecture hyperparameters of Section~\ref{sec:network_architecture}, the number of recordings per batch, the learning rate, the weight decay, the clipping threshold, the probability of the rotations and the standard deviation of the noise on the previous stroke are chosen by a grid search: every combination is trained with every seed, and the configuration is chosen on the validation loss averaged over its seeds. The grid, the chosen values and the effect of every hyperparameter are reported in Chapter~\ref{ch:validation}.
+The architecture hyperparameters of Section~\ref{sec:network_architecture}, the number of recordings per batch, the learning rate, the weight decay, the clipping threshold, the probability and the largest angle of the rotations and the standard deviation of the noise on the previous stroke are chosen by a grid search: every combination is trained with every seed and ranked by its validation loss averaged over the seeds. The best configurations differ by less than the variability of the loss between seeds, so any of them would serve, and one of them was taken. The grid, the chosen values and the effect of every hyperparameter are reported in Chapter~\ref{ch:validation}.
 
 \paragraph{Evaluation}
-Besides the loss, the software evaluates a trained network on the strokes it generates, through the precision, density and coverage metrics~\cite{naeem2020reliable}: precision and density measure the fidelity of the generated strokes, that is, how close they lie to the recorded ones, while coverage measures their diversity, that is, how much of the variety of the recorded strokes they reproduce. These metrics and their results are presented in Chapter~\ref{ch:validation}.
+Besides the loss, the software evaluates a trained network in two ways. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic} of the recorded strokes, with the network fed the recorded history. The strokes it generates are compared with the recorded ones through the precision~\cite{kynkaanniemi2019improved}, density and coverage~\cite{naeem2020reliable} metrics: precision and density measure the fidelity of the generated strokes, that is, how close they lie to the recorded ones, while coverage measures their diversity, that is, how much of the variety of the recorded strokes they reproduce. These metrics and their results are presented in Chapter~\ref{ch:validation}.
 
 %==============================================================================
 % 4. Experimental Validation
@@ -1017,6 +1017,7 @@ Besides the loss, the software evaluates a trained network on the strokes it gen
 \label{ch:validation}
 This chapter discusses the reasons behind the settings of certain hyperparameters, the design of the task, the experimental protocol, the result of the evaluation, an analysis of the experimental data with the corresponding statistical analysis and, finally, an overall evaluation of the system.
 \section{Task Design}
+\label{sec:task_design}
 Each task consists of a sequence of waypoints that the subject first learns with the guidance of the haptic device and the visual feedback, which then reproduces without any of the two. The tasks were designed to meet two requirements. First, their difficulty should be controlled through the properties of the waypoints, according to the principles of motor planning and learning reviewed in Chapter~\ref{ch:sota}. Second, the recorded movements should be decomposable into strokes that can be associated with pairs of consecutive waypoints.
 
 \paragraph{Difficulty}
@@ -1025,12 +1026,25 @@ How easily a task is memorised depends on the arrangement of its waypoints. Thei
 \paragraph{Segmentation}
 Consecutive strokes are separated by minima of the speed profile, so the waypoints are arranged to induce a minimum near each of them. Two factors slow the hand down near a waypoint: the speed decreases where the curvature of the path increases, according to the two-thirds power law~\cite{lacquaniti1983,viviani1995}, and reaching a target accurately requires a lower speed~\cite{fitts1954}. Non-collinearity alone is not sufficient, since three non-collinear points always lie on a circle, and a single stroke, whose path is a circular arc, can traverse them without any speed minimum. The direction of motion must therefore change by a sufficiently large angle at each waypoint, so that the path has a curvature peak there. Paths of constant or slowly varying curvature, such as circles and spirals, do not meet this condition, since the two-thirds power law predicts an almost constant or monotonically varying speed along them. Finally, as learning proceeds, point-to-point movements tend to become continuous and smooth~\cite[pp.~37--38]{senatore2012}, so the association between strokes and waypoints is expected to be strongest in the early repetitions.
 
-\subsection{Single stroke}
-Single stroke tasks have been introduced to have some representation of smooth straight movements. Not only these tasks are easy for subjects to start the campaign, but they also provide an insight on movements where there is only one stroke expected. 
+The sixteen tasks that meet these two requirements are grouped by their number of strokes into three families, listed in Table~\ref{tab:tasks}. In the frame of the device the $Y$ axis is vertical, so the $XY$ plane is parallel to the frontal plane of the subject, the $XZ$ plane to the horizontal plane of the table and the $YZ$ plane to the sagittal plane. The name of a task gives its shape and, as a suffix, its plane.
 
-Three such tasks have been designed, where the two waypoint lie on a specific plane: parallel to the subject's transverse plane, to imitate writing on the table, parallel to their coronal one too, to imitate writing on air. Finally, another tasks relying on a plane that is not parallel to either of the two, which imitates retracting the hand.
+\subsection{Single stroke}
+Single-stroke tasks represent smooth, straight movements. They are easy, so they let the subjects start the campaign while getting used to the device, and they provide movements in which exactly one stroke is expected.
+
+Three such tasks (\texttt{BURSTs}) join two waypoints along a diagonal of a plane: the horizontal plane, as when writing on a table, the frontal plane, as when writing in the air, and the sagittal plane, which is parallel to neither of the two and imitates bringing the hand towards or away from the body.
+
 \subsection{Two strokes}
+Two-stroke tasks have three waypoints, and the direction of motion changes at the middle one. The angle between the two segments at the middle waypoint sets how sharp the turn is, and therefore how marked the speed minimum between the two strokes is expected to be:
+\begin{itemize}
+    \item \texttt{BURSTc}, a curved burst with an angle of about $41^\circ$, on each of the three planes;
+    \item \texttt{CHECK}, an asymmetric check mark with an angle of about $71^\circ$, on the frontal and horizontal planes;
+    \item \texttt{HOOK}, a hook with an angle of about $72^\circ$, on the frontal and sagittal planes;
+    \item \texttt{REVERSAL\_Z}, an almost complete reversal of the direction of motion, with an angle of about $4^\circ$, along the $Z$ axis;
+    \item \texttt{REVERSAL\_3D}, a reversal with an angle of about $33^\circ$ whose waypoints do not lie on any plane of the device frame, the only non-planar task.
+\end{itemize}
+
 \subsection{Letters}
+Letter tasks have four waypoints, three strokes and two turns of about $45^\circ$, and lie on the frontal plane: the uppercase \texttt{N}, \texttt{S} and \texttt{Z} and the nabla ($\nabla$). Their waypoints are the corners of an angular version of each letter, so that every stroke is one of its straight segments, and their semantic content is expected to make them easier to memorise than paths of the same complexity without meaning.
 
 % \section{Task Design}
 % As aforementioned, the design of the tasks must take into account various difficulties the subjects may face when executing the tasks. First, memorizing the task may not be immediate, and its complexity depends upon the disposition of the waypoints: how many of waypoints, if there are patterns like coplanarity, semantic information, curvature, and the angle of the plan which respect to the table where the haptic device lies in case they are coplanar. 
@@ -1050,7 +1064,6 @@ Additionally, the protocol should be designed to minimize any potential sources 
 \subparagraph{Observer effect} The user is aware of the fact that they are being observed and that their movements are being recorded, which could affect their behaviour and introduce some bias in the collected data. To prevent this kind of bias, the user should be informed about the purpose of the experiment and the data collection process, and they should be given the opportunity to ask questions and provide feedback. This will help to ensure that the user feels comfortable and engaged in the experiment, and that they are motivated to perform their best. Of course, any reveal of the purpose of the experiment should be done in a way that doesn't influence the user's behaviour, and thus bias the collected data.
 
 \subsection{Tunable Parameters}
-The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.  
 
 % In this scenario, the users interact with a system that shows them an ordered sequence of waypoints in the space, namely a path, and they are asked to follow them with their hand. As they move, the system collects the trajectory of their movements, expressed as an ordered sequence of timestamped points with respect to a reference frame. For convenience, the reference frame is assumed to be the robot's base frame, and the points are expressed in Cartesian coordinates, each sampled at a fixed frequency.
 \subparagraph{Parameters}
@@ -1073,49 +1086,72 @@ Regarding the aforementioned experimental parameters, the following values have 
 
 \begin{table}[h!]
     \centering
-    \begin{tabular}{|ccc|}
-    \hline
-    \textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
-    \hline
-    \hline
-    $W_s$ & Waypoint diameter & 0.05 m \\
-    $P_l$ & Path length & 2-7 waypoints \\
+    \caption{Values of the parameters of the experimental session.}
+    \label{tab:session_parameters}
+    \begin{tabular}{lll}
+    \toprule
+    Parameter & Description & Value \\
+    \midrule
+    $W_s$ & Waypoint radius & 0.0175 m \\
+    $P_l$ & Path length & 2--4 waypoints \\
     $P_r$ & Path repetitions & 20 repetitions \\
-    $N_P$ & Number of paths & 20 paths \\
-    $R_t$ & Rest time & 60s \\
+    $N_P$ & Number of paths & 16 paths \\
+    $R_t$ & Rest time & 60 s \\
     $R_f$ & Rest frequency & $1/6$ \\
-    \hline
+    \bottomrule
 \end{tabular}
 \end{table}
 As explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
 
+\subsection{Haptic Guidance}
+\label{sec:guidance}
+During training, and before every recording, the controller pulls the hand of the subject towards a target waypoint with a force proportional to the distance from it. With $\vec e$ the vector from the stylus to the waypoint, the force is
+\begin{equation}
+    \vec F = \min\left(1,\ \frac{F_{\max}}{\lVert\vec f\rVert}\right)\vec f,\qquad
+    \vec f = K\,\frac{\vec e}{\lVert\vec e\rVert}\left(\lVert\vec e\rVert-r_{\mathrm{tol}}\right)\ \text{ if } \lVert\vec e\rVert\ge r_{\mathrm{tol}},\qquad \vec f=0 \text{ otherwise},
+\end{equation}
+where $K=\operatorname{diag}(K_X,K_Y,K_Z)$ holds the gains along the three axes, $r_{\mathrm{tol}}$ is a tolerance inside which no force is applied and $F_{\max}$ caps the magnitude of the force. Every time the target changes, the force grows linearly from zero over a build-up time, so that the hand is not jerked towards the new waypoint.
+
+A waypoint counts as reached when the stylus is inside its sphere, of radius $W_s$. The controller then waits until the stylus has stayed inside the sphere for a stay-on-point time before taking the next waypoint as target: the stay gives the subject the time to memorise the position of every waypoint. The experimenter can lower or raise the largest force $F_{\max}$ over five levels with the keyboard; at the lowest level the stays are skipped and the next waypoint becomes the target as soon as a sphere is reached, so that the last guided repetitions are continuous, like the movements that are recorded.
+
+Before a recording the subject is taken to the first waypoint and has to stay in its sphere for the same time. While waiting, the device applies an imperceptible force that keeps its light on; when the recording starts the force is removed and the light switches off, which tells the subject to start the movement. The values of these settings are listed in Table~\ref{tab:guidance}.
+
+\begin{table}[h!]
+    \centering
+    \caption{Settings of the haptic guidance and of the controller.}
+    \label{tab:guidance}
+    \begin{tabular}{lll}
+    \toprule
+    Setting & Symbol & Value \\
+    \midrule
+    Waypoint radius & $W_s$ & 17.5 mm \\
+    Tolerance without force & $r_{\mathrm{tol}}$ & $0.275\,W_s\approx4.8$ mm \\
+    Stay-on-point time & -- & 0.7 s \\
+    Gains along $X$, $Y$, $Z$ & $K_X,K_Y,K_Z$ & 50, 70, 190 N/m \\
+    Largest force, five levels & $F_{\max}$ & 1.0, 1.25, 1.5, 1.75, 2.0 N (default 2.0 N) \\
+    Force build-up time & -- & 0.5 s \\
+    Rate of the controller & -- & 500 Hz \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
 \subsection{Written Protocol}
 Providing the user with a written protocol is mandatory not only to ensure that all the user have the same information, but also to ensure that they have the same understanding of the task. From the different equivalent sequences of words available to explain an instruction, the most intuitive should be chosen, to avoid any bias in the collected data. 
-\subparagraph{Input} In each experiment of a session a path is shown to the user, their goal is to traverse close to the waypoint as fast as possible, with the understanding that it's not strictly necessary to cross all the waypoints, but rather to think of them as attractors. They will first be pre-trained to follow the path with the aid of visual and haptic feedback, until they reach a certain level of proficiency, defined by the experimenter, and then they will be asked to follow the path without any aid, while the system collects their movements.
+\subparagraph{Input} In each experiment of a session a path is shown to the user, whose goal is to traverse it close to the waypoints in a single swift, continuous motion, without stopping before the last one, with the understanding that it is not strictly necessary to cross the centre of every waypoint, but rather to think of the waypoints as attractors. The user is first pre-trained with the aid of the visual feedback and of the haptic guidance (Section~\ref{sec:guidance}), until they feel confident and the experimenter agrees, and is then asked to execute the path without any aid, while the system collects their movements.
 \subparagraph{Result} For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy. Other information like the user's hand orientation and the angular twist velocity are collected as well, but they are not needed for the generative model, since they are not used to generate new movements. They are collected to provide a more complete representation of the user's movements, and to eventually allow for a more detailed analysis of the data.
 
 \begin{protocol}
-... Welcome ... What's your dominant hand? (If no preference is expressed, pick left hand when possible). (Prepare the environment on the subject choice).
+Welcome. Which is your dominant hand? (The device is placed on the side of the dominant hand.)
 
-The device to your (left/right) side is a haptic device, which is connected to the screen in front of you (the screen shows an empty environment). In the screen, you can observe the effects that manipulating the device has on the environment.
+The device at your (left/right) side is a haptic device, connected to the screen in front of you, which shows a virtual environment. On the screen you can see the effect of moving the device: the triad of axes moves and rotates with the stylus.
 
-Please extract the device from its housing and handle it as if it was a pen or a precision tool. Feel free to explore the environment in the simulation. Try to exit from it: you will feel forces that will prevent you from leaving it. Those are the limits within you can freely move. There are two buttons on the pen: the darker one lets you rotate the environment, the lighter one to zoom. [mouse]
+Please take the stylus out of its housing and hold it as you would hold a pen or a precision tool. Feel free to explore the environment. Try to leave it: you will feel forces that keep you inside. They mark the limits within which you can move freely.
 
-(Once the subject learnt how to use it). Now, the screen will show you some colored spheres (inside other transparent spheres?). Try to make a smooth, fluid and natural movement that crosses all the spheres. The order in which the movement must cross the spheres is given by their number. 
+(Once the subject can use the device.) The screen will now show some coloured spheres. The order in which you have to go through them is given by their colour, from warm to cool. To learn the path, the device will guide your hand: it will pull you towards each sphere in turn, hold you there for a moment, and then pull you towards the next one. Let it guide you and try to remember where the spheres are. The guidance will be repeated as many times as you need.
 
-Initially, when you try to cross the spheres, the device will help you reach them by pulling you towards their center. After a while, the device will let you traverse to the next sphere, with a slight pulling force.
+(During the training the experimenter may lower the guidance force; at the lowest level the device no longer stops on the spheres.)
 
-After a fixed amount of repetitions, the screen won’t show any information, and only the haptic feedback will be left, which pulling force will decrease execution by execution.
-
-After a fixed amount of repetitions, the pulling force will decrease to zero (it must dynamically adjust itself by studying the subject accuracy), from there you will be in the recording phase.
-
-(Should the user be told when they're in the recording phase?)
-
-Every time you want to be placed to the start position and/or reset the execution, just press the dark button. Now please, try to cross the spheres with the aid of the device.
-
-[steps: (sight + haptic feedback), (haptic feedback), (no info)]
-
-(When the pre training phase ends) Congrats. Now, proceed to repeat the same movement you've done before, without the screen information (or with only the points visible?) as accurately as possible. If you feel you're off track, don't fix the movement and try again, since it would be discarded anyways. (In order to help you, the device will automatically place itself in the starting position when you press the lighter button. A brief vibration will tell you when to start the movement. If during the movement you feel the same vibration, then you have to redo it again?)
+(When the subject feels confident.) Now the screen will be hidden. Before every repetition the device will take your hand to the first sphere: hold still there. When the light of the device switches off, go through all the other spheres, in order, with a single swift and continuous movement, without stopping before the last one. You do not need to pass exactly through the centre of each sphere. If you feel that you have gone off track, do not correct the movement: just tell us, and the repetition will be discarded and executed again.
 \end{protocol}
 
 
@@ -1154,9 +1190,9 @@ A path could represent a common task that a human subject may perform in their d
 
 The visual feedback is shown to the subject through the ordered sequence of spheres projected in a simulated three-dimensional environment in the screen. The depth perception is given by the perspective of the camera, which can be moved by the subject to change their point of view. 
 
-The haptic feedback is given to the subject through the haptic device's actuators, which apply forces to the subject's hand to guide them towards the path. These forces are applied toward the next waypoint, and let the user stay on each waypoint to give them time to memorize the positions of the waypoints. The more the user's ability to follow the path increases, the less the haptic feedback is applied. More importantly, the rest time on the waypoints is zeroed, since the user must follow the path without stopping on the waypoints. This should happen some time before the haptic feedback is removed, in order to let the user get used to the fact that they are supposed to follow the path without stopping on the waypoints.
+The haptic feedback is given to the subject through the actuators of the device, which pull the hand towards the next waypoint (Section~\ref{sec:guidance}). Once the hand is inside the sphere of a waypoint, the device holds it there for 0.7~s before pulling it towards the next one, to give the subject the time to memorise the position of every waypoint. The experimenter can lower the guidance force; at the lowest level the stays on the waypoints are removed, so that the subject gets used to traversing the path without stopping on the waypoints before the guidance is removed altogether.
 
-\subparagraph{Motor Representation} Both the haptic feedback and the visual feedback are not used during the recording phase, but rather in a previous phase called pre-training. During this step, the user is aided in following the path through the visual and haptic feedback, until a certain level of proficiency is reached. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. Once this representation is formed, the user starts to follow the path without any aid, in order to test this proficiency, the feedbacks are slowly removed, until they are completely disabled. The user is then asked to follow the path without any aid, while the system collects their movements. 
+\subparagraph{Motor Representation} Neither the haptic nor the visual feedback is used during the recording phase, but only in a previous phase called pre-training. During this step, the user is guided through the path, with the visual and the haptic feedback, until they feel confident and the experimenter agrees. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. The recordings are then made with the screen hidden and without guidance, apart from the transfer to the first waypoint, while the system collects the movements.
 
 \subparagraph{Curvature Representation}
 The only issue with representing a path only by a sequence of points is that it only takes into account direct links between waypoints. Humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution. This aspect must be extracted from the dataset and learned by the generative model, since it is a fundamental aspect of human motion.
@@ -1164,36 +1200,310 @@ The only issue with representing a path only by a sequence of points is that it 
 An idea to make this aspect stand out from the collected data could be the introduction of arrows in the visual environment, although this means crowding it with more information that could be distracting or hard to interpret for the user. Also, this requires defining other tunable parameters, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, at a specific size and orientation. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. In the end, it is mandatory to explain to the user that they are supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them, since this would lead to unnatural movements: the user should be encouraged to follow the path smoothly.
 
 \subsection{Path Taxonomy}
-The paths that will be shown to the subject during the experiment are grouped into the following categories: 
-\begin{itemize}
-    \item Burst: impulsive movements. Simple paths that help the subject getting used to the haptic device. 
-    \begin{itemize}
-        \item Straight line over the $XY, YZ$ or $XZ$ planes
-        \item Semicircumference over the $XY, YZ$ or $XZ$ planes
-    \end{itemize}
-    \item Geometric: two- and three-dimensional round geometric shapes
-    \begin{itemize}
-        \item Helix, growing over the $X$ or $Y$ axes
-        \item Spiral, in the $XY$ plane
-        \item Ellipses, one in the $XY$ plane and the other in the $XZ$ plane
-        \item Circle, one in the $XY$ plane and the other in the $XZ$ plane
-    \end{itemize}
-    \item Symbol: letters of an alphabet
-    \begin{itemize}
-        \item Cursive lowercase L $\left(\ell\right)$ in both the $XY$ and $XZ$ planes
-        \item Print uppercase S in an oblique plane in both senses
-        \item Cursive Greek Phi $\left(\varphi\right)$ in the $XY$ plane
-        \item Print uppercase $N$ which segments differ in plane 
-    \end{itemize}
-\end{itemize}
+The paths shown to the subjects are the sixteen tasks of Section~\ref{sec:task_design}, grouped into three families by their number of strokes (Table~\ref{tab:tasks}): single strokes (\texttt{BURSTs}), two strokes separated by a turn (\texttt{BURSTc}, \texttt{CHECK}, \texttt{HOOK} and \texttt{REVERSAL}) and letters of three strokes (\texttt{LETTER}). Paths of constant or slowly varying curvature, such as circles, ellipses, spirals and helices, are not included, since they do not induce a speed minimum at their waypoints (Section~\ref{sec:task_design}); neither are cursive letters, whose strokes do not end at well-defined corners. The last column of the table assigns every task to the training, validation or test set of the generative model (Section~\ref{sec:data_split}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Tasks of the experimental campaign: number of waypoints and strokes, plane of the waypoints in the device frame, angle between consecutive segments at the inner waypoints, and set of the generative model.}
+    \label{tab:tasks}
+    \begin{tabular}{llllll}
+        \toprule
+        Task & Waypoints & Strokes & Plane & Turn angle & Set\\
+        \midrule
+        \texttt{BURSTs\_XY}    & 2 & 1 & $XY$ & --                     & training\\
+        \texttt{BURSTs\_XZ}    & 2 & 1 & $XZ$ & --                     & validation\\
+        \texttt{BURSTs\_YZ}    & 2 & 1 & $YZ$ & --                     & test\\
+        \midrule
+        \texttt{BURSTc\_XY}    & 3 & 2 & $XY$ & $41^\circ$             & training\\
+        \texttt{BURSTc\_XZ}    & 3 & 2 & $XZ$ & $41^\circ$             & test\\
+        \texttt{BURSTc\_YZ}    & 3 & 2 & $YZ$ & $41^\circ$             & validation\\
+        \texttt{CHECK\_XY}     & 3 & 2 & $XY$ & $71^\circ$             & training\\
+        \texttt{CHECK\_XZ}     & 3 & 2 & $XZ$ & $71^\circ$             & training\\
+        \texttt{HOOK\_XY}      & 3 & 2 & $XY$ & $72^\circ$             & training\\
+        \texttt{HOOK\_YZ}      & 3 & 2 & $YZ$ & $72^\circ$             & training\\
+        \texttt{REVERSAL\_Z}   & 3 & 2 & $XZ$, along $Z$ & $4^\circ$   & training\\
+        \texttt{REVERSAL\_3D}  & 3 & 2 & none & $33^\circ$             & test\\
+        \midrule
+        \texttt{LETTER\_N}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & training\\
+        \texttt{LETTER\_S}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & validation\\
+        \texttt{LETTER\_Z}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & test\\
+        \texttt{LETTER\_NABLA} & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & validation\\
+        \bottomrule
+    \end{tabular}
+\end{table}
 \section{Evaluation Metrics}
+\label{sec:evaluation_metrics}
+As stated in the definition of the problem, a generated movement has no single ground truth, so the network is evaluated against the distribution of the recorded strokes, in three ways.
+
+\paragraph{Loss}
+The validation loss of Equation~\eqref{eq:nll_loss}, in nats per stroke, measures how probable the recorded strokes of the validation tasks are under the predicted mixtures, given their recorded history. It is the criterion of the model selection, and is reported separately for first and later strokes, since their densities are defined over spaces of different dimension.
+
+\paragraph{Probability integral transform}
+A small loss does not guarantee that the predicted spread is right. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic}, in its multivariate form based on highest-density regions. For a recorded stroke $\sym{obs}$ with predicted density $\sym{qtheta}$, restricted to the dimensions that exist for the stroke,
+\begin{equation}
+    u=\Pr_{Y\sim \sym{qtheta}}\left[\sym{qtheta}(Y)\le \sym{qtheta}(\sym{obs})\right]
+\end{equation}
+is the probability that a stroke drawn from the prediction is less probable than the recorded one, estimated with 1000 samples per stroke. If the prediction is calibrated, $u$ is uniform in $[0,1]$, and the recorded stroke falls inside the highest-density region of nominal probability $\alpha$ for a fraction $\alpha$ of the strokes, since it lies inside that region exactly when $u\ge1-\alpha$. An excess of large values of $u$ means that the prediction is too wide, an excess of small values that it is too narrow or misplaced. The coverage of the 50\,\% and 90\,\% regions summarises the histogram of $u$.
+
+\paragraph{Precision, density and coverage}
+The strokes generated in free running, where every stroke is conditioned on the generated history, are compared with the recorded strokes of the same task in the space of the output features that exist for them, standardised with the mean and standard deviation of the recorded strokes of the task; first strokes and later strokes are compared separately. The recorded strokes are split at random into two halves. Every stroke $r_j$ of the first half, $j=1,\dots,N$, defines a ball centred on it with radius equal to the distance from its $k$-th nearest neighbour in the same half, with $k=5$. The generated strokes $g_i$, $i=1,\dots,M$, subsampled to the size of the second half, give
+\begin{equation}
+    \begin{gathered}
+        \text{precision}=\frac1M\sum_{i=1}^{M}\mathbb 1\left[\exists j:\ g_i\in B_j\right],\qquad
+        \text{coverage}=\frac1N\sum_{j=1}^{N}\mathbb 1\left[\exists i:\ g_i\in B_j\right],\\
+        \text{density}=\frac1{kM}\sum_{i=1}^{M}\sum_{j=1}^{N}\mathbb 1\left[g_i\in B_j\right].
+    \end{gathered}
+\end{equation}
+Precision~\cite{kynkaanniemi2019improved} is the fraction of generated strokes that fall in the region of the recorded ones; density~\cite{naeem2020reliable} also counts how many recorded neighbourhoods contain each of them, so that it is about one when the two distributions match and exceeds one when the generated strokes crowd the densest region; coverage~\cite{naeem2020reliable} is the fraction of recorded neighbourhoods reached by at least one generated stroke, and measures diversity. The values are averaged over 30 random splits. The second half of the recorded strokes, scored in the same way, gives the values that a generator indistinguishable from the subjects would reach. For every task, as many sequences are generated as there are recorded trials, each with its own random seed, at the determinism values $\sym{determinism}=0,0.1,\dots,1$.
 
 \section{Experimental Data}
-Through the executions of the experiments, the system collects a dataset of human movements, expressed as a sequence of timestamped points in the space, with respect to the reference frame. 
+\label{sec:experimental_data}
+
+\subsection{Dataset}
+Eleven subjects took part in the campaign and executed the sixteen tasks of Table~\ref{tab:tasks} with about twenty repetitions each, for a total of 3528 recordings. The reconstruction kept 3090 of them (87.6\,\%), the others being discarded by the rules of Section~\ref{sec:data_processing_system}; the kept recordings contain 6464 strokes (Table~\ref{tab:dataset}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Recordings and strokes of the reconstructed dataset, by family of tasks.}
+    \label{tab:dataset}
+    \begin{tabular}{lrrr}
+        \toprule
+        Family & Strokes per recording & Recordings & Strokes\\
+        \midrule
+        \texttt{BURSTs}   & 1 & 573  & 573\\
+        \texttt{BURSTc}   & 2 & 574  & 1148\\
+        \texttt{CHECK}    & 2 & 303  & 606\\
+        \texttt{HOOK}     & 2 & 368  & 736\\
+        \texttt{REVERSAL} & 2 & 415  & 830\\
+        \texttt{LETTER}   & 3 & 857  & 2571\\
+        \midrule
+        Total             &   & 3090 & 6464\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Reconstruction Settings}
+The settings of the data processing pipeline introduced in Chapter~3 are listed in Table~\ref{tab:reconstruction_settings}. The cut-off of the low-pass filter is the trade-off discussed in Section~\ref{sec:feature_extraction}: 16~Hz is high enough not to distort the speed profiles of the strokes, which last a few tenths of a second, and low enough to remove the noise that would add spurious speed minima. The bounds of $\sym{sigma}$ mark the failures of the kinematic fit, since a recording is discarded when a kept stroke reaches one of them, while the bounds of $\sym{mu}$ are wide enough never to be reached by a plausible stroke.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Settings of the data processing pipeline.}
+    \label{tab:reconstruction_settings}
+    \begin{tabular}{lll}
+        \toprule
+        Setting & Symbol & Value\\
+        \midrule
+        Low-pass filter & -- & Chebyshev type II, order 11\\
+        Cut-off and stopband attenuation & -- & 16 Hz, 80 dB\\
+        Resampling & $\sym{samplingint}$ & 2 ms (500 Hz), PCHIP\\
+        Distance between speed minima & $\sym{dtb}$ & 0.1 s\\
+        Prominence of the speed minima & $\sym{vb}$ & 0.005 m/s\\
+        Peak speed of a kept stroke & $\sym{vmin}$ & 0.2 m/s\\
+        Bounds of the log-time delay & $\sym{mumin}$, $\sym{mumax}$ & $-6$, $3$\\
+        Bounds of the log-response time & $\sym{sigmamin}$, $\sym{sigmamax}$ & 0.05, 1.75\\
+        Starting values of $\sym{sigma}$ & $\sym{ssigma}$ & $\{0.15,0.3,0.5\}$\\
+        Onset factors & $\sym{sonset}$ & $\{1,1.5,2.5\}$\\
+        Bounds of the tangent lengths & $\sym{lammin}$, $\sym{lammax}_i$ & 1 mm, $2\sym{amplitude}_i$\\
+        Largest rotation of a direction & $\sym{alphamax}$ & $\pi$\\
+        Tolerance of the length constraint & $\sym{epsl}$ & $10^{-4}$\\
+        Gauss--Legendre nodes & $\sym{ngl}$ & 64\\
+        Grid of the arc-length inversion & $\sym{nell}$ & 4001\\
+        Onset of the first stroke & $\sym{tfirst}$ & 0.2 s\\
+        Scale of the tangent handles & $\sym{handlescale}$ & 0.05\\
+        Floor of the Cholesky diagonal & $\sym{diagfloor}$ & $10^{-3}$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Reconstruction Quality}
+The loss of information of the representation is measured on every reconstructed recording, over the span of its kept strokes, by two mean squared errors: between the recorded speed and the sum of the lognormals of the strokes, and between the recorded positions and the Bézier chain at equal normalized arc length, averaged over the samples and over the three coordinates. Their distributions by family are shown in Figure~\ref{fig:reconstruction_errors} and summarised in Table~\ref{tab:reconstruction_errors}, where the square roots of the medians give the errors in the units of speed and length.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{results/reconstruction_errors_by_category.pdf}
+    \caption{Reconstruction error of the 3090 recordings by family of tasks, on a logarithmic scale: speed (left) and path (right). Boxes span the 25th to the 75th percentile, lines are the medians, whose values are written above, and whiskers span the 5th to the 95th percentile.}
+    \label{fig:reconstruction_errors}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Median reconstruction errors by family. The root mean squared error of the speed is the square root of its mean squared error; the RMS distance of the path is the square root of three times its mean squared error, which is averaged over the three coordinates.}
+    \label{tab:reconstruction_errors}
+    \begin{tabular}{lrrrr}
+        \toprule
+        Family & \multicolumn{2}{c}{Speed} & \multicolumn{2}{c}{Path}\\
+        & MSE [(mm/s)$^2$] & RMSE [mm/s] & MSE [mm$^2$] & RMS distance [mm]\\
+        \midrule
+        \texttt{BURSTs}   & 374  & 19 & 0.107 & 0.57\\
+        \texttt{BURSTc}   & 1106 & 33 & 0.124 & 0.61\\
+        \texttt{CHECK}    & 873  & 30 & 0.138 & 0.64\\
+        \texttt{HOOK}     & 733  & 27 & 0.057 & 0.41\\
+        \texttt{REVERSAL} & 932  & 31 & 0.191 & 0.76\\
+        \texttt{LETTER}   & 1258 & 35 & 0.139 & 0.65\\
+        \midrule
+        All               & 948  & 31 & 0.122 & 0.60\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The geometric representation is accurate: the median distance between the recorded and the reconstructed path is below one millimetre, on paths some ten centimetres long. The kinematic representation is less tight, with a median error of about 31~mm/s on peak speeds of several hundred millimetres per second, and a median signal-to-noise ratio of the speed over the whole recording of 21.3~dB. Its error is lowest for the single strokes, whose speed is a single lognormal, and highest for the letters, whose three strokes overlap; in the recordings inspected, the largest deviations lie in the valleys between consecutive strokes and in the final tail of the movement, where the recorded speed does not follow the shape of a lognormal. Among the paths, the reversals have the largest error, probably because a cubic segment cannot follow the sharp turn of the hand at the reversal point.
+
+\subsection{Data Split}
+\label{sec:data_split}
+The tasks are divided into eight training, four validation and four test tasks (Table~\ref{tab:tasks}). The validation and test tasks were drawn at random under a rule fixed before the draw: every family keeps at least one task in training, and the straight and curved bursts of the three sets lie on three different planes. All the recordings of the training tasks are used for training (1466 recordings, 2971 strokes); the validation tasks (811 recordings, 1851 strokes) select the checkpoint and the configuration; the test tasks (813 recordings, 1642 strokes) were used only once, to evaluate the chosen network.
 
 \section{Statistical Significance}
+\label{sec:statistical_significance}
+Every configuration is trained with several seeds, and the variation of the validation loss between the seeds of the same configuration is the reference against which the differences between configurations are judged. In the hyperparameter grid (Section~\ref{sec:hyperparameter_search}) the standard deviation of the validation loss between the seeds of a configuration is about 0.07 nats per stroke. With 2304 configurations and three seeds each at the chosen rotation angle, an analysis of variance finds every main effect significant even after a Bonferroni correction, so the importance of a hyperparameter is judged by the size of its effect rather than by its $p$-value: only the number of components, the width of the LSTM, the number of recordings per batch and the width of the head change the loss by more than 0.04 nats per stroke.
+
+The best configurations of the grid differ by less than this variation between seeds, so their ranking is mostly due to chance, and the best average among many noisy averages is optimistic. To check that the choice among them does not matter, the four best configurations, which differ only in the learning rate ($10^{-4}$ or $3\cdot10^{-4}$) and in the number of recordings per batch (4 or 8), were trained again with 100 new seeds, the same for every configuration, so that they can be compared seed by seed. Their mean validation losses are 12.367, 12.374, 12.380 and 12.399 nats per stroke, against 12.28--12.32 in the grid, which confirms the optimism of the grid averages. Any two of them differ by at most 0.03 nats per stroke, and every difference lies within $\pm0.05$ nats per stroke according to two one-sided tests at the 5\,\% level: the four configurations are equivalent, and the chosen one has the lowest mean.
+
+The same seeds were used to train the configuration adopted before the search (LSTM width 64, four components, eight recordings per batch, rotation probability 0.75, noise on the previous stroke 0.05). Its mean validation loss is 12.498 nats per stroke: the chosen configuration improves it by 0.131 nats per stroke, with a 95\,\% confidence interval of $[0.112, 0.150]$, and the improvement is significant according to a paired $t$-test with Holm correction ($p<10^{-4}$), as are those of the other three configurations.
 
 \section{System Evaluation}
+\label{sec:system_evaluation}
+
+\subsection{Hyperparameter Search}
+\label{sec:hyperparameter_search}
+The grid of Table~\ref{tab:hyperparameter_grid} contains $2^9\cdot3^2=4608$ configurations, each trained with three seeds, for a total of 13\,824 runs, with at most 1000 epochs and a patience of 50 epochs; the noise on the waypoints starts from a standard deviation of 0.05 and decreases to zero over the first 20 epochs.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Hyperparameter grid and chosen values.}
+    \label{tab:hyperparameter_grid}
+    \begin{tabular}{lll}
+        \toprule
+        Hyperparameter & Values & Chosen\\
+        \midrule
+        Width of the LSTM and of the trunk & 32, 64 & 32\\
+        Width of the hidden layer of the head & 32, 64 & 64\\
+        Mixture components $\sym{ncomp}$ & 2, 4, 6 & 2\\
+        Dropout rate, trunk and head & 0.2, 0.4 & 0.2\\
+        Learning rate & $10^{-4}$, $3\cdot10^{-4}$ & $3\cdot10^{-4}$\\
+        Weight decay & 0, $10^{-4}$ & $10^{-4}$\\
+        Recordings per batch & 4, 8, 16 & 4\\
+        Clipping threshold of the gradient norm & 1, 10 & 1\\
+        Noise on the previous stroke (standard deviation) & 0.02, 0.1 & 0.02\\
+        Probability of the rotations & 0.75, 1 & 1\\
+        Largest angle of the rotations & $30^\circ$, $180^\circ$ & $180^\circ$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The largest angle of the rotations dominates all the other hyperparameters: on average over the rest of the grid, rotations up to $180^\circ$ lower the validation loss by 1.47 nats per stroke with respect to rotations up to $30^\circ$. With rotations limited to $30^\circ$ the planes of the recordings are kept, and a validation task drawn on a plane never seen in training is effectively a new shape; with rotations in any direction every task is seen in every orientation. All the following analyses use the 2304 configurations with rotations up to $180^\circ$. Figure~\ref{fig:hyperparameter_effects} shows the effect of every other hyperparameter, averaged over all the combinations of the rest. The number of components is the most important: two components are better than four, and four better than six. Smaller widths of the LSTM and smaller batches are better, while the wider head is better than the narrower one. The other hyperparameters change the loss by less than 0.03 nats per stroke. The fifteen best configurations have mean validation losses within 0.06 nats per stroke of each other, less than the variation between seeds, and share the values of the most important hyperparameters: two components, an LSTM width of 32, a head width of 64 and rotations up to $180^\circ$ with probability one. One of them was taken, and its values are the best ones of every panel of Figure~\ref{fig:hyperparameter_effects}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{results/hyperparameter_effects.pdf}
+    \caption{Effect of the hyperparameters on the validation loss, over the 2304 configurations with rotations up to $180^\circ$. Top: difference between the best and the worst value of every hyperparameter, with its 95\,\% interval. Bottom: mean validation loss of the configurations with each value, all panels on the same scale; the 95\,\% intervals are smaller than the dots, the rings mark the chosen values and the dotted lines the mean of all the configurations.}
+    \label{fig:hyperparameter_effects}
+\end{figure}
+
+\subsection{Final Network}
+The chosen network has the layers of Table~\ref{tab:final_network}, for a total of 23\,474 parameters, half of which belong to the layer of the Cholesky factors. For a batch of $B$ recordings, where the longest one has $T$ strokes and all together have $N$ strokes, the inputs of the strokes are padded to the longest recording before the LSTM, and the padding is removed after it.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Layers of the final network, with the shape of their outputs and their number of parameters. $N$ is the number of strokes of the batch, $B$ the number of its recordings and $T$ the number of strokes of its longest recording.}
+    \label{tab:final_network}
+    \small
+    \begin{tabular}{llr}
+        \toprule
+        Layer & Output & Parameters\\
+        \midrule
+        Inputs: conditioning (7) and previous stroke (11) & $[N,18]$ & --\\
+        Padding of every recording to $T$ strokes & $[B,T,18]$ & --\\
+        LSTM, one layer, hidden width 32 & $[B,T,32]\rightarrow[N,32]$ & 6\,656\\
+        Trunk: linear $32\rightarrow32$, ReLU, dropout 0.2 & $[N,32]$ & 1\,056\\
+        Hidden layer of the head: linear $32\rightarrow64$, ReLU, dropout 0.2 & $[N,64]$ & 2\,112\\
+        Mixture weights: linear $64\rightarrow2$, softmax & $[N,2]$ & 130\\
+        Means: linear $64\rightarrow26$ & $[N,2,13]$ & 1\,690\\
+        Cholesky factors: linear $64\rightarrow182$, $2\times91$ entries & $[N,2,13,13]$ & 11\,830\\
+        \midrule
+        Total & & 23\,474\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The network was trained with 100 seeds. Figure~\ref{fig:loss_band} shows the losses during training: the training loss keeps decreasing, while the validation loss reaches its minimum after a median of 34 epochs (between 21 and 106 depending on the seed) and then slowly rises, as the network starts to fit the training tasks at the expense of the unseen ones; early stopping restores the weights of the minimum. The seeds behave alike, as the narrow bands show. A run lasts about 2.6 minutes on one processor core, with 24 runs in parallel.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{results/loss_band.pdf}
+    \caption{Training and validation loss of the final network over the first 40 epochs: mean over 100 seeds with a band of one standard deviation, and every run in grey. The dashed line marks the median epoch of the lowest validation loss.}
+    \label{fig:loss_band}
+\end{figure}
+
+\subsection{Results}
+Table~\ref{tab:nll_sets} reports the loss of the final network on the three sets of tasks. The strokes of the training tasks are the recordings the network was trained on, so their loss is lower and gives an upper bound of the performance on new repetitions of known tasks. The losses on the validation and test tasks, both never seen in training, are close to each other, so the choice of the configuration on the validation tasks did not make the validation loss noticeably optimistic.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Loss of the final network on the three sets of tasks, in nats per stroke: mean $\pm$ standard deviation over 100 seeds. The losses of first and later strokes are densities over spaces of different dimension and are not comparable with each other.}
+    \label{tab:nll_sets}
+    \begin{tabular}{lrrr}
+        \toprule
+        Tasks & First strokes & Later strokes & All strokes\\
+        \midrule
+        Training   & $12.85\pm0.30$ & $10.01\pm0.36$ & $11.41\pm0.33$\\
+        Validation & $13.79\pm0.09$ & $11.26\pm0.09$ & $12.37\pm0.06$\\
+        Test       & $13.87\pm0.20$ & $10.97\pm0.18$ & $12.41\pm0.15$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The calibration of the predicted distributions is shown in Figure~\ref{fig:calibration} for the seed with the median validation loss. On the training tasks the PIT histogram rises towards one, and more recorded strokes than expected fall inside the central regions (Table~\ref{tab:calibration}): the predicted distribution is somewhat too wide, which is consistent with a network trained with noise, rotations and dropout and stopped on unseen tasks. On the validation and test tasks the histogram is nearly flat, apart from an excess of strokes in the lowest bin: the network is calibrated for most strokes, but finds some strokes of the new tasks too improbable, and its 90\,\% regions contain 83--85\,\% of the recorded strokes.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{results/calibration.pdf}
+    \caption{Calibration of the final network (seed with the median validation loss) on the training, validation and test tasks: histograms of the HPD PIT, flat for a calibrated prediction, and fraction of recorded strokes inside the highest-density regions against their nominal probability.}
+    \label{fig:calibration}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Fraction of recorded strokes inside the highest-density regions of the predicted mixture, for the seed with the median validation loss.}
+    \label{tab:calibration}
+    \begin{tabular}{lrrr}
+        \toprule
+        Tasks & Strokes & 50\,\% region & 90\,\% region\\
+        \midrule
+        Training   & 2971 & 63\,\% & 91\,\%\\
+        Validation & 1851 & 47\,\% & 83\,\%\\
+        Test       & 1642 & 52\,\% & 85\,\%\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Finally, Figure~\ref{fig:dpc} and Table~\ref{tab:dpc} compare the strokes generated in free running with the recorded ones, for the same seed, as the determinism varies. The three metrics behave in the same way on all the sets. Precision grows with the determinism and approaches one, since the samples concentrate around the means of the most probable components; density grows too, and exceeds one when the generated strokes crowd the densest region of the recorded ones; coverage reaches its maximum between 0.3 and 0.5 and then collapses, since a more deterministic generator reproduces fewer of the ways in which the subjects executed the strokes. The best compromise between fidelity and diversity lies around $\sym{determinism}=0.3$--$0.5$. The recorded strokes reach a precision of about 0.96, a coverage of about 0.97 and a density of about one against themselves: the generated strokes are mostly plausible, but reproduce only about half of the variety of the recorded ones. On the test tasks the metrics are close to those on the validation tasks, and for the first strokes even to those on the training tasks.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{results/density_precision_coverage.pdf}
+    \caption{Density, precision and coverage of the generated first strokes (top) and later strokes (bottom) against the determinism, for the training, validation and test tasks: mean over the tasks of each set, with a band of one standard deviation over the tasks. The dashed line is the value of the recorded strokes against themselves.}
+    \label{fig:dpc}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Precision, density and coverage of the generated strokes at three values of the determinism, mean over the tasks of each set.}
+    \label{tab:dpc}
+    \begin{tabular}{llrrrrrrrrr}
+        \toprule
+        & & \multicolumn{3}{c}{Precision} & \multicolumn{3}{c}{Density} & \multicolumn{3}{c}{Coverage}\\
+        Strokes & Tasks & 0 & 0.5 & 1 & 0 & 0.5 & 1 & 0 & 0.5 & 1\\
+        \midrule
+        First & Training   & 0.42 & 0.79 & 0.95 & 0.19 & 0.67 & 1.10 & 0.39 & 0.51 & 0.06\\
+              & Validation & 0.34 & 0.72 & 0.80 & 0.15 & 0.46 & 0.64 & 0.34 & 0.43 & 0.03\\
+              & Test       & 0.44 & 0.87 & 1.00 & 0.24 & 0.81 & 1.35 & 0.41 & 0.48 & 0.07\\
+        \midrule
+        Later & Training   & 0.56 & 0.88 & 0.98 & 0.35 & 1.09 & 1.97 & 0.57 & 0.62 & 0.11\\
+              & Validation & 0.33 & 0.77 & 0.97 & 0.14 & 0.50 & 0.96 & 0.32 & 0.39 & 0.04\\
+              & Test       & 0.39 & 0.76 & 0.94 & 0.20 & 0.64 & 1.01 & 0.39 & 0.43 & 0.05\\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 %==============================================================================
 % 5. Conclusion
