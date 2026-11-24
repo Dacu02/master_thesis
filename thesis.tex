@@ -21,8 +21,10 @@
 \usepackage[T1]{fontenc}
 \usepackage{svg}
 \usepackage{csquotes}
+\usepackage{dsfont}
 \usepackage[british]{babel}
 \usepackage{tikz}
+\usepackage[skip=6pt]{caption}
 \usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc, decorations.pathreplacing, arrows.meta}
 
 \usepackage{mathptmx}
@@ -42,6 +44,10 @@
 
 \usepackage{titlesec}
 \usepackage{epigraph}
+
+\usepackage{booktabs}
+\usepackage{multirow}
+
 \epigraphnoindent
 \setlength{\epigraphrule}{0.4pt}
 \newcommand{\blankpage}{
@@ -393,7 +399,9 @@ Neither hypothesis has yet been examined in a unified way. The evidence on motor
 
 Several tools extract lognormal parameters from recorded movements. For single rapid movements, the Delta-Lognormal parameters can be estimated from the speed profile alone, with locally optimal~\cite{djioua2009} or globally optimal~\cite{oreilly2012} algorithms. For complex planar movements, the Robust XZERO algorithm extracts Sigma-Lognormal parameters from the velocity~\cite{oreilly2009}, while iDeLog jointly optimises the reconstruction of trajectory and velocity, starting from an action plan of virtual target points inspired by motor equivalence~\cite{idelog}. Its three-dimensional extension, iDeLog3D, is one of the few tools operating on spatial movements~\cite{idelog3d}, by reducing the problem as a sequence of planar movements.
 
-These extractors are evaluated mainly through the quality of the reconstruction, measured as the signal-to-noise ratio between the observed and the reconstructed signals. A high reconstruction quality, however, does not guarantee that the extracted strokes are meaningful from a motor control perspective, since different decompositions may reproduce the same movement equally well. For the Delta-Lognormal model, it has been shown that physiologically derived rules are needed, in addition to global optimality, to obtain meaningful parameters~\cite{oreilly2012}. When the parameters are used to train a generative model, a further requirement emerges: similar movements should be described by similar sets of strokes, so that their distribution can be learned. 
+These extractors are evaluated mainly through the quality of the reconstruction, measured as the signal-to-noise ratio between the observed and the reconstructed signals. A high reconstruction quality, however, does not guarantee that the extracted strokes are meaningful from a motor control perspective, since different decompositions may reproduce the same movement equally well. For the Delta-Lognormal model, it has been shown that physiologically derived rules are needed, in addition to global optimality, to obtain meaningful parameters~\cite{oreilly2012}. When the parameters are used to train a generative model, a further requirement emerges: similar movements should be described by similar sets of strokes, so that their distribution can be learned.
+
+The ambiguity concerns even a single stroke. A lognormal speed profile is described by three time parameters, its onset, its log-time delay and its log-response time, but its position and its width constrain only two combinations of them, while the third is determined by the skewness of the bell, which is small and lies mostly in its flanks (Section~\ref{sec:data_processing_system}). In statistics, this is the behaviour of an embedded model: the Gaussian is the limit of the three-parameter lognormal in which two parameters diverge, and near this limit the estimation is ill-conditioned and the parameters are poorly identifiable, unless the model is reparameterised~\cite{cheng1992embedded}. The authors of iDeLog acknowledge that different combinations of the parameters fit the same speed profile and are all valid from the computational point of view, and resolve the ambiguity with a biological assumption: the onset of every stroke is fixed by assuming that the time between the issue of its command and its execution is about 0.5~s, similar for all the strokes of a well-learned movement, after which only the log-time delay and the log-response time are fitted, and the plausibility of the solution rests on the expectation that these two parameters remain fairly constant along a movement~\cite[Sec.~III-B]{idelog}. A parameter that cannot be identified from the kinematics cannot be interpreted physiologically either, unless an assumption or an independent measurement fixes it.
 
 Extraction methods for three-dimensional movements that combine kinematics and geometry, and that favour a decomposition consistent with the organisation of the motor system over the most accurate reconstruction, therefore remain scarce.
 
@@ -563,6 +571,16 @@ after which the fitted stroke is removed from the residual over the whole record
     \label{eq:residual_update}
 \end{equation}
 The window of a stroke is therefore fitted without the tails of the strokes that precede it. The bounds let the onset precede the window by at most the window duration and force it to precede the end of the window by at least three sampling intervals, so that the stroke has samples to be fitted on; the values of $\sym{mumin}$, $\sym{mumax}$, $\sym{sigmamin}$ and $\sym{sigmamax}$ are given in Chapter~\ref{ch:validation}.
+
+Problem~\eqref{eq:lognormal_fit} is poorly conditioned, because the speed profile does not constrain its three parameters equally. Seen as a distribution over time, the lognormal of a stroke has its peak at $\sym{tpeak}_k=\sym{tzero}_k+e^{\sym{mu}_k-\sym{sigma}_k^2}$, variance $\sym{tvar}_k=e^{2\sym{mu}_k+\sym{sigma}_k^2}\big(e^{\sym{sigma}_k^2}-1\big)$ and skewness $\big(e^{\sym{sigma}_k^2}+2\big)\sqrt{e^{\sym{sigma}_k^2}-1}\simeq3\sym{sigma}_k$. The position and the width of the bell, $\sym{tpeak}_k$ and $\sym{tvar}_k$, are well determined by the data, but they fix only two combinations of the three parameters: for given $\sym{tpeak}_k$ and $\sym{tvar}_k$, every value of $\sym{sigma}$ gives a lognormal with the same peak and the same width,
+\begin{equation}
+    \sym{mu}(\sym{sigma})=\tfrac12\ln\sym{tvar}_k-\tfrac12\sym{sigma}^2-\tfrac12\ln\big(e^{\sym{sigma}^2}-1\big),\qquad
+    \sym{tzero}(\sym{sigma})=\sym{tpeak}_k-\frac{\sqrt{\sym{tvar}_k}\,e^{-3\sym{sigma}^2/2}}{\sqrt{e^{\sym{sigma}^2}-1}},
+    \label{eq:lognormal_family}
+\end{equation}
+and the members of this family differ only in their skewness. For small $\sym{sigma}$, $\sym{tzero}\simeq\sym{tpeak}_k-\sqrt{\sym{tvar}_k}/\sym{sigma}$ and $\sym{mu}\simeq\tfrac12\ln\sym{tvar}_k-\ln\sym{sigma}$, so that $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}_k}/\sym{sigma}^2$ and $d\sym{mu}/d\sym{sigma}\simeq-1/\sym{sigma}$: a small error on the skewness becomes a large and correlated error on the onset and on the log-time delay. For a stroke with $\sqrt{\sym{tvar}_k}=30$~ms, moving $\sym{sigma}$ from 0.20 to 0.25 delays the onset by about 32~ms and lowers $\sym{mu}$ by about 0.24, while the peak and the width of the bell do not change. As $\sym{sigma}\to0$, the onset goes to $-\infty$, $\sym{mu}$ goes to $+\infty$ and the lognormal tends to a Gaussian: in statistics, the Gaussian is an embedded model of the three-parameter lognormal, a limiting case reached only when two parameters diverge, which makes the estimation ill-conditioned unless the model is reparameterised~\cite{cheng1992embedded}.
+
+The skewness that tells the members of the family apart lies mostly in the flanks of the bell. The two inflection points of the profile are almost symmetric about the peak, the ratio between their distances from it being $1+\sym{sigma}^3/12$ to leading order, whereas their heights differ already at first order: the logarithm of the ratio between the speed at the later and at the earlier inflection point is $\sym{sigma}\sqrt{1+\sym{sigma}^2/4}$. The information on $\sym{sigma}_k$ therefore comes from the heights of the flanks, which is where consecutive strokes overlap and where Equation~\eqref{eq:residual_update} subtracts the tails of the previous strokes: an error in those tails moves $\sym{sigma}_k$ and, through Equation~\eqref{eq:lognormal_family}, also $\sym{tzero}_k$ and $\sym{mu}_k$.
 
 Only the strokes that carry the movement are kept. The peak speed of a stroke, found at peak time $\sym{tzero}_k+e^{\sym{mu}_k-\sym{sigma}_k^2}$
 \begin{equation}
@@ -772,6 +790,8 @@ Problem~\eqref{eq:lognormal_fit} is solved with a trust-region reflective method
 \end{equation}
 The factor $\sym{onsetfactor}$ sets the onset: $\sym{onsetfactor}=1$ puts it at the start of the window, and larger values move it earlier, as the overlap of consecutive strokes allows. The starting points are clipped to the bounds of Problem~\eqref{eq:lognormal_fit}.
 
+The starting points do not remove the ill-conditioning discussed in Section~\ref{sec:data_processing_system}. They start from different members of the family of Equation~\eqref{eq:lognormal_family}, along which the cost changes only through the flanks of the bell, and the lowest cost selects one of them on small differences in the flanks. $\sym{sigma}_k$ is therefore the least reliable of the extracted parameters, and $\sym{tzero}_k$ and $\sym{mu}_k$ inherit its error. Unlike iDeLog, which fixes the onset through an assumed delay~\cite{idelog}, the onset is left free within its bounds, and the bounds limit how far a solution can slide along the family: the lower bound on the onset, one window duration before the window, and the lower bound $\sym{sigmamin}$ both exclude the nearly Gaussian end of the family, where the onset would precede the movement by an arbitrarily long time. A stroke that reaches a bound of $\sym{sigma}$ is treated as a failure of the fit, and its recording is discarded (Chapter~\ref{ch:validation}).
+
 \paragraph{Geometric fit}
 Problem~\eqref{eq:bezier_fit} is solved with sequential quadratic programming, in two stages. In the first stage every segment is fitted on its own, with its directions fixed to the estimates $\sym{direstimate}_i$, $\sym{direstimate}_{i+1}$ and the curve parameter taken equal to the normalized arc length of the data, $\sym{curvepar}=\sym{dataarc}_{i,n}$. Under these two approximations the residuals are affine in the tangent lengths, so the problem with the bounds alone is a linear least-squares problem, solved exactly; its solution is the starting point of the same problem with the constraint $\sym{arclength}_i=\sym{amplitude}_i$. In the second stage the whole chain is optimised from the tangent lengths of the first stage and from zero rotations, $\sym{rotation}_j=0$, that is, from the estimated directions.
 
@@ -854,10 +874,10 @@ The onset is replaced by the delay between the speed peaks of consecutive stroke
     \sym{tpeak}_i=\sym{tzero}_i+e^{\sym{mu}_i-\sym{sigma}_i^2}.
     \label{eq:peak_delay}
 \end{equation}
-The onset lies where the speed is close to zero, so it is weakly constrained by the fit, while the peak is the most visible point of the speed profile. The delay between two peaks measures how much consecutive strokes overlap, and dividing it by $e^{\sym{mu}_{i-1}}$, the time the previous stroke takes to cover half of its amplitude, makes it independent of the speed of the movement. The logarithm requires the peaks to be in order, so the recordings where a stroke peaks before the previous one are discarded. The onset is rebuilt after $\sym{mu}_i$ and $\sym{sigma}_i$, as $\sym{tzero}_i=\sym{tpeak}_{i-1}+e^{\sym{peakdelay}_i+\sym{mu}_{i-1}}-e^{\sym{mu}_i-\sym{sigma}_i^2}$. The first stroke has no previous peak, and its onset is set to a constant $\sym{tfirst}$: only the timing between strokes matters, while the absolute onset depends on when the recording started.
+The onset lies where the speed is close to zero, so it is weakly constrained by the fit, while the peak is the most visible point of the speed profile. Equation~\eqref{eq:lognormal_family} makes this precise: along the family of solutions that the fit cannot tell apart, the peak does not move, whereas the onset moves by $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}_i}/\sym{sigma}^2$. The delay between two peaks measures how much consecutive strokes overlap, and dividing it by $e^{\sym{mu}_{i-1}}$, the time the previous stroke takes to cover half of its amplitude, makes it independent of the speed of the movement. The logarithm requires the peaks to be in order, so the recordings where a stroke peaks before the previous one are discarded. The onset is rebuilt after $\sym{mu}_i$ and $\sym{sigma}_i$, as $\sym{tzero}_i=\sym{tpeak}_{i-1}+e^{\sym{peakdelay}_i+\sym{mu}_{i-1}}-e^{\sym{mu}_i-\sym{sigma}_i^2}$. The first stroke has no previous peak, and its onset is set to a constant $\sym{tfirst}$: only the timing between strokes matters, while the absolute onset depends on when the recording started.
 
 \paragraph{Lognormal shape}
-$\sym{mu}_i$ is kept as it is, since it is already the logarithm of a time, and $\sym{sigma}_i$ is learned as $\ln\sym{sigma}_i$.
+$\sym{mu}_i$ is kept as it is, since it is already the logarithm of a time, and $\sym{sigma}_i$ is learned as $\ln\sym{sigma}_i$. Along the family of Equation~\eqref{eq:lognormal_family}, $\sym{mu}_i\simeq\tfrac12\ln\sym{tvar}_i-\ln\sym{sigma}_i$, so the two outputs move together when the fit slides along it: part of the negative correlation between them that the full covariance of the mixture learns may come from the extraction rather than from the subjects.
 
 \paragraph{Displacement}
 The chord is described by its length relative to the waypoint vector and by its direction in the waypoint frame,
@@ -1018,41 +1038,80 @@ Besides the loss, the software evaluates a trained network in two ways. The cali
 This chapter discusses the reasons behind the settings of certain hyperparameters, the design of the task, the experimental protocol, the result of the evaluation, an analysis of the experimental data with the corresponding statistical analysis and, finally, an overall evaluation of the system.
 \section{Task Design}
 \label{sec:task_design}
-Each task consists of a sequence of waypoints that the subject first learns with the guidance of the haptic device and the visual feedback, which then reproduces without any of the two. The tasks were designed to meet two requirements. First, their difficulty should be controlled through the properties of the waypoints, according to the principles of motor planning and learning reviewed in Chapter~\ref{ch:sota}. Second, the recorded movements should be decomposable into strokes that can be associated with pairs of consecutive waypoints.
+Each task consists of a sequence of waypoints that the subject first learns with the guidance of the haptic device and the visual feedback, which then reproduces without any of the two. The tasks were designed to meet two requirements. First, their difficulty should be controlled through the properties of the waypoints and their displacements, according to the principles of motor planning and learning reviewed in Chapter~\ref{ch:sota}. Second, the recorded movements should be easily decomposable into strokes that can be associated with pairs of consecutive waypoints.
 
 \paragraph{Difficulty}
-How easily a task is memorised depends on the arrangement of its waypoints. Their number determines the load on visuospatial working memory, which maintains spatial representations for a few seconds~\cite[p.~1292]{shohamy2021}; according to Senatore, the sequence of points to reach is precisely what is acquired in the early stage of learning~\cite[pp.~34--38]{senatore2012}. Semantic content reduces this load. A letter is thought to be stored as an effector-independent representation, which allows it to keep its shape when written with a different effector or in a different plane~\cites[pp.~726--727]{wolpert2021}[p.~38]{senatore2012}, whereas a path without meaning has to be learned from scratch. Coplanarity and the orientation of the plane affect how the waypoints are transferred from the display to the workspace: the display provides no binocular disparity~\cite[pp.~550--552]{gilbert2021}, and depth is the direction in which vision is least reliable~\cite[p.~720]{wolpert2021}. Waypoints lying on a plane inclined with respect to the table on which the device rests are therefore expected to be harder to reproduce than waypoints on a plane parallel to the display.
+How easily a task is memorised depends on the arrangement of its waypoints. Their number determines the load on visuospatial working memory, which maintains spatial representations for a few seconds~\cite[p.~1292]{shohamy2021}; according to Senatore, the sequence of points to reach is precisely what is acquired in the early stage of learning~\cite[pp.~34--38]{senatore2012}. 
+
+Semantic content reduces the cognitive load. A letter is thought to be stored as an effector-independent representation, which allows it to keep its shape when written with a different effector or in a different plane~\cites[pp.~726--727]{wolpert2021}[p.~38]{senatore2012}, whereas a path without meaning has to be learned from scratch. 
+
+Coplanarity and the orientation of the plane affect how the waypoints are transferred from the display to the workspace. The display provides no binocular disparity~\cite[pp.~550--552]{gilbert2021}, and depth is the direction in which vision is least reliable~\cite[p.~720]{wolpert2021}. Waypoints lying on a plane inclined with respect to the table on which the device rests are therefore expected to be harder to reproduce than waypoints on a plane parallel to the display.
 
 \paragraph{Segmentation}
 Consecutive strokes are separated by minima of the speed profile, so the waypoints are arranged to induce a minimum near each of them. Two factors slow the hand down near a waypoint: the speed decreases where the curvature of the path increases, according to the two-thirds power law~\cite{lacquaniti1983,viviani1995}, and reaching a target accurately requires a lower speed~\cite{fitts1954}. Non-collinearity alone is not sufficient, since three non-collinear points always lie on a circle, and a single stroke, whose path is a circular arc, can traverse them without any speed minimum. The direction of motion must therefore change by a sufficiently large angle at each waypoint, so that the path has a curvature peak there. Paths of constant or slowly varying curvature, such as circles and spirals, do not meet this condition, since the two-thirds power law predicts an almost constant or monotonically varying speed along them. Finally, as learning proceeds, point-to-point movements tend to become continuous and smooth~\cite[pp.~37--38]{senatore2012}, so the association between strokes and waypoints is expected to be strongest in the early repetitions.
 
-The sixteen tasks that meet these two requirements are grouped by their number of strokes into three families, listed in Table~\ref{tab:tasks}. In the frame of the device the $Y$ axis is vertical, so the $XY$ plane is parallel to the frontal plane of the subject, the $XZ$ plane to the horizontal plane of the table and the $YZ$ plane to the sagittal plane. The name of a task gives its shape and, as a suffix, its plane.
+\subsection{Waypoint Definition}
+As previously mentioned, a task is defined as an ordered sequence of points in the space, called waypoints, each defined by its position in the space. However, even though the user should try to follow the path by crossing the waypoints, some deviation from them is to be expected, since no human movement ever perfectly follows a path. In the same way, a generative model should think of waypoints as a reference, akin to an attractor, rather than a strict constraint.
 
-\subsection{Single stroke}
+A path of two waypoints is simply a straight line between the two. On the other hand, a path of three waypoints is interpretable as a curve, since the user is supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them: the result is a curve that starts from the first waypoint, gets near the second one, and ends almost on the third one. The same principle applies to paths of more than three waypoints, which are interpreted as a sequence of curves, which curvature is inversely related to the alignment of the waypoints.
+
+The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space (Section~\ref{sec:path_description}).
+
+\subsection{Path Taxonomy}
+The sixteen tasks that meet the requirements on difficulty and segmentation are grouped by their number of strokes into three families, listed in Table~\ref{tab:tasks}. In the frame of the device the $Y$ axis is vertical, so the $XY$ plane is parallel to the frontal plane of the subject, the $XZ$ plane to the horizontal plane of the table and the $YZ$ plane to the sagittal plane. The name of a task gives its shape and, as a suffix, its plane.
+
+Paths of constant or slowly varying curvature, such as circles, ellipses, spirals and helices, are not included, since they do not induce a speed minimum at their waypoints; neither are cursive letters, whose strokes do not end at well-defined corners. The last column of the table assigns every task to the training, validation or test set of the generative model (Section~\ref{sec:data_split}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Tasks of the experimental campaign: number of waypoints and strokes, plane of the waypoints in the device frame, angle between consecutive segments at the inner waypoints, and set of the generative model.}
+    \label{tab:tasks}
+    \begin{tabular}{llllll}
+        \toprule
+        Task & Waypoints & Strokes & Plane & Turn angle & Set\\
+        \midrule
+        \texttt{BURSTs\_XY}    & 2 & 1 & $XY$ & --                     & training\\
+        \texttt{BURSTs\_XZ}    & 2 & 1 & $XZ$ & --                     & validation\\
+        \texttt{BURSTs\_YZ}    & 2 & 1 & $YZ$ & --                     & test\\
+        \midrule
+        \texttt{BURSTc\_XY}    & 3 & 2 & $XY$ & $41^\circ$             & training\\
+        \texttt{BURSTc\_XZ}    & 3 & 2 & $XZ$ & $41^\circ$             & test\\
+        \texttt{BURSTc\_YZ}    & 3 & 2 & $YZ$ & $41^\circ$             & validation\\
+        \texttt{CHECK\_XY}     & 3 & 2 & $XY$ & $71^\circ$             & training\\
+        \texttt{CHECK\_XZ}     & 3 & 2 & $XZ$ & $71^\circ$             & training\\
+        \texttt{HOOK\_XY}      & 3 & 2 & $XY$ & $72^\circ$             & training\\
+        \texttt{HOOK\_YZ}      & 3 & 2 & $YZ$ & $72^\circ$             & training\\
+        \texttt{REVERSAL\_Z}   & 3 & 2 & $XZ$, along $Z$ & $4^\circ$   & training\\
+        \texttt{REVERSAL\_3D}  & 3 & 2 & none & $33^\circ$             & test\\
+        \midrule
+        \texttt{LETTER\_N}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & training\\
+        \texttt{LETTER\_S}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & validation\\
+        \texttt{LETTER\_Z}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & test\\
+        \texttt{LETTER\_NABLA} & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & validation\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Single stroke}
 Single-stroke tasks represent smooth, straight movements. They are easy, so they let the subjects start the campaign while getting used to the device, and they provide movements in which exactly one stroke is expected.
 
-Three such tasks (\texttt{BURSTs}) join two waypoints along a diagonal of a plane: the horizontal plane, as when writing on a table, the frontal plane, as when writing in the air, and the sagittal plane, which is parallel to neither of the two and imitates bringing the hand towards or away from the body.
+Three such tasks (\texttt{BURSTs}) join two waypoints along a diagonal of a plane: the horizontal plane, as when writing on a table, the frontal plane, as when writing in the air, and the sagittal plane, which is parallel to neither of the two and imitates bringing the hand towards the body.
 
-\subsection{Two strokes}
+\paragraph{Two strokes}
 Two-stroke tasks have three waypoints, and the direction of motion changes at the middle one. The angle between the two segments at the middle waypoint sets how sharp the turn is, and therefore how marked the speed minimum between the two strokes is expected to be:
 \begin{itemize}
     \item \texttt{BURSTc}, a curved burst with an angle of about $41^\circ$, on each of the three planes;
     \item \texttt{CHECK}, an asymmetric check mark with an angle of about $71^\circ$, on the frontal and horizontal planes;
     \item \texttt{HOOK}, a hook with an angle of about $72^\circ$, on the frontal and sagittal planes;
     \item \texttt{REVERSAL\_Z}, an almost complete reversal of the direction of motion, with an angle of about $4^\circ$, along the $Z$ axis;
-    \item \texttt{REVERSAL\_3D}, a reversal with an angle of about $33^\circ$ whose waypoints do not lie on any plane of the device frame, the only non-planar task.
+    \item \texttt{REVERSAL\_3D}, a reversal with an angle of about $33^\circ$ whose waypoints do not lie on any plane of the device frame, the only "non-planar" task.
 \end{itemize}
 
-\subsection{Letters}
+\paragraph{Letters}
 Letter tasks have four waypoints, three strokes and two turns of about $45^\circ$, and lie on the frontal plane: the uppercase \texttt{N}, \texttt{S} and \texttt{Z} and the nabla ($\nabla$). Their waypoints are the corners of an angular version of each letter, so that every stroke is one of its straight segments, and their semantic content is expected to make them easier to memorise than paths of the same complexity without meaning.
 
-% \section{Task Design}
-% As aforementioned, the design of the tasks must take into account various difficulties the subjects may face when executing the tasks. First, memorizing the task may not be immediate, and its complexity depends upon the disposition of the waypoints: how many of waypoints, if there are patterns like coplanarity, semantic information, curvature, and the angle of the plan which respect to the table where the haptic device lies in case they are coplanar. 
-
-% Second, no more than two waypoints can be collinear. The waypoints dispositions must make it impossible for the subject to traverse more than two waypoints using only a single stroke. Of course, two points will always be collinear, but the third waypoint shall force the user to curve the movement, decreasing the movement speed temporarily until the direction of motion goes toward the next point. As the subject hand speeds up again, the speed profile will increase again, thus forming a minimum. 
-
 \section{Experimental Protocol}
-The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase.
+The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase. At the same time, since some requirements are not explainable, such as keeping momentum and not correct movements with micro strokes, these have to be learned from the data distribution.
 
 \subsection{Sources of Bias}
 To ensure consistency across different subjects, the experimental protocol should be designed to minimize any potential biases or confounding factors that could affect the results. For instance, it is necessary to simplify some complex terms by finding more intuitive and user-friendly ways to explain them, so to ensure user comprehension and engagement. 
@@ -1061,11 +1120,12 @@ Additionally, the protocol should be designed to minimize any potential sources 
 
 \subparagraph{Posture} The environment must be designed to ensure the user's safety and comfort, by providing them with a comfortable chair and ensuring that the haptic device is properly calibrated and adjusted to their physical characteristics (i.e. dominant hand, arm length, height, etc.) to reduce any potential sources of discomfort or fatigue and increase comfort during the experiment. The more the user feels relaxed, the more natural their movements will be, and thus the more accurate the collected data will be. 
 
-\subparagraph{Observer effect} The user is aware of the fact that they are being observed and that their movements are being recorded, which could affect their behaviour and introduce some bias in the collected data. To prevent this kind of bias, the user should be informed about the purpose of the experiment and the data collection process, and they should be given the opportunity to ask questions and provide feedback. This will help to ensure that the user feels comfortable and engaged in the experiment, and that they are motivated to perform their best. Of course, any reveal of the purpose of the experiment should be done in a way that doesn't influence the user's behaviour, and thus bias the collected data.
+\subparagraph{Observer effect \& trepidation} The user is aware of the fact that they are being observed and that their movements are being recorded, which could affect their behaviour and introduce some bias in the collected data. To prevent this kind of bias, the user should be informed about the purpose of the experiment and the data collection process, and they should be given the opportunity to ask questions and provide feedback. This will help to ensure that the user feels comfortable and engaged in the experiment, and that they are motivated to perform their best. Albeit, any reveal of the purpose of the experiment should be done in a way that doesn't influence the user's behaviour, and thus bias the collected data.
+
+\subparagraph{Interpretation \& ambiguity} While the experimenter tries to simplify the meaning of the experimental protocol, and eliminate most of the ambiguity caused by the use of natural language through possibly the minimum amount of complex words, it is still possible that not all subjects may grasp some concepts. For this reason, practice with the haptic device and the task is crucial, indeed the tasks are executed in order of number of waypoints to let the subject build confidence with the device.
 
 \subsection{Tunable Parameters}
 
-% In this scenario, the users interact with a system that shows them an ordered sequence of waypoints in the space, namely a path, and they are asked to follow them with their hand. As they move, the system collects the trajectory of their movements, expressed as an ordered sequence of timestamped points with respect to a reference frame. For convenience, the reference frame is assumed to be the robot's base frame, and the points are expressed in Cartesian coordinates, each sampled at a fixed frequency.
 \subparagraph{Parameters}
 The session does have various parameters that need to be tuned in a trade-off between the accuracy of the collected data, their naturalness, the fatigue of the user, the length of the experiment and the amount of data collected. The parameters that can be tuned are:
 
@@ -1074,9 +1134,8 @@ The session does have various parameters that need to be tuned in a trade-off be
     \item $W_s$: The size of the spheres that represent the waypoints of the paths, which can be increased to make it easier for the user to follow the path, but at the cost of reducing the accuracy of the collected data. A bigger sphere would require less training and less precision from the user, but it would also make the collected data less accurate, since the user would be able to deviate more from the path without being penalized. On the other hand, a smaller sphere would require more training and more precision from the user, but it would also make the collected data more accurate, since the user would be forced to follow the path more closely. Although, this forceful guidance could lead to unnatural movements, unnatural to a human, which would be detrimental to the generative model. 
     \item $P_l$: The number of waypoints of a path, which can be increased to make the path more complex, at the cost of increasing the difficulty for the user to follow the path. A more complex path would require more training and heavier cognitive effort, while increasing the data collected. Conversely, a simpler path would require less training and less cognitive effort, while reducing the data collected. The complexity of the path needs to be balanced with the user's ability to follow it, to collect accurate and natural data.
     \item $P_r$: The number of repetitions for each path, which can be increased to collect more data, at the cost of increasing the fatigue of the user and the length of the experiment. This parameter comes at the cost of making brief rest periods between repetitions, which would compensate the user's fatigue, but at the cost of greatly increasing the time duration of the full experiment session.
-    \item $T_r$: The number of execution prior to the recording phase, named "pre-training phase". Albeit it would be simpler to have a fixed number of repetitions, the issue is within the variability of human learning. Some subjects may learn a path in less time than other, thanks to a prior knowledge of environments over the screen, or of their . Since this parameter depends on the user's ability to follow the path, and on the complexity of the path itself, it is left to decide up to the experimenter. If the user correctly follows the path for a certain number of repetitions, and feels enough confident to proceed to the recording phase, they can switch to the recording phase. Until then, the pre-training will aid the participant by providing the haptic feedback.
+    \item $T_r$: The number of execution prior to the recording phase, named "pre-training phase". Albeit it would be simpler to have a fixed number of repetitions, the issue is within the variability of human learning. Some subjects may learn a path in less time than others, thanks to a prior knowledge of environments exploration through the screen, or because of a better motor coordination. Since this parameter depends on the user's ability to follow the path, and on the complexity of the path itself, the deicsion is up the experimenter. If the user correctly follows the path for a certain number of repetitions, and feels enough confident to proceed to the recording phase, they can switch to the recording phase. Until then, the pre-training will aid the participant by providing the haptic feedback.
     
-
     \item $N_P$: The number of paths, which can be increased to collect more diverse data, at the cost of increasing the length of the experiment. More paths would provide a better representation of the task space and allow to more generalization, but would also require more time and effort from the user. Although, having a few paths would limit the diversity of the data collected, and thus the generalization of the generative model.
     \item $R_t$ and $R_f$: The rest periods length and frequency (expressed as a fraction of $N_P$), which can be increased to reduce the fatigue of the user, at the cost of increasing the duration of the experiment. The rest periods need to be short to keep the user focused on the task, but long enough to allow them to recover from their fatigue, while not being felt coercive by the user. Moreover, the rest periods need to be frequent enough to allow the user to recover from their fatigue while executing the different paths, but not too frequent to make the user lose focus on the task. 
 \end{itemize}
@@ -1102,6 +1161,23 @@ Regarding the aforementioned experimental parameters, the following values have 
 \end{tabular}
 \end{table}
 As explained before, the training repetitions are not a tunable parameter, since they depend on the subject ability to follow the path, and on the complexity of the path itself. At most, it would be possible to define an acceptance criterion during the training phase. Since the training requires them to cross all the waypoints, it is safe to assume that the criterion is in some way already encoded in the waypoint size $W_s$.
+
+\subsection{Path Description}
+\label{sec:path_description}
+A path, in simple terms, is an ordered sequence of waypoints. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. However, a human's perception of a three-dimensional space is not mathematical, and thus it is not as accurate as the model one. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path.
+
+\subparagraph{Visual \& Haptic Feedback} An intuitive representation should make use of the human natural instinct to merge different sensory inputs to form a more complete perception of the environment. In this case the two only classes of sensory inputs available are the visual and haptic ones, since they are the only two that are directly transformed into positional information in the perceived space by the motor cortex. 
+
+The visual feedback is shown to the subject through the ordered sequence of spheres projected in a simulated three-dimensional environment in the screen. The depth perception is given by the perspective of the camera, which can be moved by the subject to change their point of view. 
+
+The haptic feedback is given to the subject through the actuators of the device, which pull the hand towards each waypoint in turn and hold it there for a moment before moving on to the next one, as described in Section~\ref{sec:guidance}.
+
+\subparagraph{Motor Representation} Neither the haptic nor the visual feedback is used during the recording phase, but only in a previous phase called pre-training. During this step, the user is guided through the path, with the visual and the haptic feedback, until they feel confident and the experimenter agrees. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. The recordings are then made with the screen hidden and without guidance, apart from the transfer to the first waypoint, while the system collects the movements.
+
+\subparagraph{Curvature Representation}
+The only issue with representing a path only by a sequence of points is that it only takes into account direct links between waypoints. Humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution. This aspect must be extracted from the dataset and learned by the generative model, since it is a fundamental aspect of human motion.
+
+An idea to make this aspect stand out from the collected data could be the introduction of arrows in the visual environment, although this means crowding it with more information that could be distracting or hard to interpret for the user. Also, this requires defining other tunable parameters, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, at a specific size and orientation. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. In the end, it is mandatory to explain to the user that they are supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them, since this would lead to unnatural movements: the user should be encouraged to follow the path smoothly.
 
 \subsection{Haptic Guidance}
 \label{sec:guidance}
@@ -1137,25 +1213,25 @@ Before a recording the subject is taken to the first waypoint and has to stay in
 
 \subsection{Written Protocol}
 Providing the user with a written protocol is mandatory not only to ensure that all the user have the same information, but also to ensure that they have the same understanding of the task. From the different equivalent sequences of words available to explain an instruction, the most intuitive should be chosen, to avoid any bias in the collected data. 
-\subparagraph{Input} In each experiment of a session a path is shown to the user, whose goal is to traverse it close to the waypoints in a single swift, continuous motion, without stopping before the last one, with the understanding that it is not strictly necessary to cross the centre of every waypoint, but rather to think of the waypoints as attractors. The user is first pre-trained with the aid of the visual feedback and of the haptic guidance (Section~\ref{sec:guidance}), until they feel confident and the experimenter agrees, and is then asked to execute the path without any aid, while the system collects their movements.
+\subparagraph{Input} In each experiment of a session a path is shown to the user, whose goal is to traverse it close to the waypoints in a single swift, continuous motion, without stopping before the last one, with the understanding that it is not strictly necessary to cross the centre of every waypoint, but rather to think of the waypoints as attractors. The user is first pre-trained with the aid of the visual feedback and of the haptic guidance (Section~\ref{sec:guidance}), until they feel confident. Then they are asked to execute the path without any aid, while the system collects their movements.
 \subparagraph{Result} For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy. Other information like the user's hand orientation and the angular twist velocity are collected as well, but they are not needed for the generative model, since they are not used to generate new movements. They are collected to provide a more complete representation of the user's movements, and to eventually allow for a more detailed analysis of the data.
 
 \begin{protocol}
 Welcome. Which is your dominant hand? (The device is placed on the side of the dominant hand.)
 
-The device at your (left/right) side is a haptic device, connected to the screen in front of you, which shows a virtual environment. On the screen you can see the effect of moving the device: the triad of axes moves and rotates with the stylus.
+The device at your (left/right) side is a haptic device, connected to the screen in front of you, which shows a virtual environment. On the screen you can see the effect of moving the device: the three axes move and rotate with the stylus.
 
-Please take the stylus out of its housing and hold it as you would hold a pen or a precision tool. Feel free to explore the environment. Try to leave it: you will feel forces that keep you inside. They mark the limits within which you can move freely.
+Please take the stylus out of its housing and hold it as you would hold a pen or a precision tool. Move it freely to explore the environment, understand the limits and the depth.
 
-(Once the subject can use the device.) The screen will now show some coloured spheres. The order in which you have to go through them is given by their colour, from warm to cool. To learn the path, the device will guide your hand: it will pull you towards each sphere in turn, hold you there for a moment, and then pull you towards the next one. Let it guide you and try to remember where the spheres are. The guidance will be repeated as many times as you need.
+(Once the subject feels at ease interacting with the device.) The screen shows some coloured spheres. The order in which you have to go through them is given by their colour, from warm to cool. To learn the path, the device will guide your hand: it will pull you towards each sphere in turn, hold you there for a moment, and then pull you towards the next one. Let it guide you and try to remember where the spheres are. The guidance will be repeated as many times as you need.
 
 (During the training the experimenter may lower the guidance force; at the lowest level the device no longer stops on the spheres.)
 
-(When the subject feels confident.) Now the screen will be hidden. Before every repetition the device will take your hand to the first sphere: hold still there. When the light of the device switches off, go through all the other spheres, in order, with a single swift and continuous movement, without stopping before the last one. You do not need to pass exactly through the centre of each sphere. If you feel that you have gone off track, do not correct the movement: just tell us, and the repetition will be discarded and executed again.
+(When the subject feels confident repeating the task.) Now the screen will be hidden. Before every repetition the device will take your hand to the first sphere: hold still there. When the light of the device switches off, go through all the other spheres, in order, with a single swift and continuous movement, without stopping before the last one. You do not need to pass exactly through the centre of each sphere. If you feel that you have gone off track, do not correct the movement: the repetition will be discarded and executed again.
 \end{protocol}
 
 
-Those are the same inputs and outputs of the generative model, with the exception that it won't follow the same policies, but only understand the underlying principles from the dataset.
+Those are the same inputs and outputs of the generative model, with the exception that it won't know the policies, but rather understand them from the data.
 
 
 % In the end, it is safe to assume that the parameters that can be tuned are $W_s$, $P_l$, $P_r$, $N_P$, $R_t$ and $R_f$. Another parameter would've been the sampling frequency, but it was set to the maximum possible frequency allowed by the hardware in order to collect the higher amount of data possible. In the end, the amount of short movements collected are the following: \begin{equation}
@@ -1173,88 +1249,34 @@ Those are the same inputs and outputs of the generative model, with the exceptio
 % \begin{equation}
 %     L_{i} = 
 % \end{equation}
-\subsection{Waypoint Definition}
-As previously mentioned, a path is defined as an ordered sequence of points in the space, called waypoints, each defined by its position in the space. Visually, they are represented through spheres, which size is a trade-off between the accuracy of the collected data and the naturalness of the user's movements. However, even though the user should try to follow the path by crossing the waypoints, some deviation from them is to be expected, since no human movement ever perfectly follows a path. In the same way, a generative model should think of waypoints as a reference, akin to an attractor, rather than a strict constraint.
-
-A path of two waypoints is simply a straight line between the two. On the other hand, a path of three waypoints is interpretable as a curve, since the user is supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them: the result is a curve that starts from the first waypoint, gets near the second one, and ends almost on the third one. The same principle applies to paths of more than three waypoints, which are interpreted as a sequence of curves, which curvature is inversely related to the alignment of the waypoints.
-
-The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space. 
-
-\subsection{Path Description}
-
-A path, in simple terms, is an ordered sequence of waypoints. This description would be sufficient for a model, since its perception of a three-dimensional space is mathematical and thus unmistakable. However, a human's perception of a three-dimensional space is not mathematical, and thus it is not as accurate as the model one. Therefore, it is necessary to provide the human subject with a more intuitive representation of the path.
-
-A path could represent a common task that a human subject may perform in their daily life, such as moving an object from one place to another, or using a particular tool. The path should be designed to be as intuitive and natural as possible, eventually combining the geometrical description with a semantic one, ensuring that the subject grasps and performs it smoothly, avoiding unnatural movements that could poison the collected data.
-
-\subparagraph{Visual \& Haptic Feedback} An intuitive representation should make use of the human natural instinct to merge different sensory inputs to form a more complete perception of the environment. In this case the two only classes of sensory inputs available are the visual and haptic ones, since they are the only two that are directly transformed into positional information in the perceived space by the motor cortex. 
-
-The visual feedback is shown to the subject through the ordered sequence of spheres projected in a simulated three-dimensional environment in the screen. The depth perception is given by the perspective of the camera, which can be moved by the subject to change their point of view. 
-
-The haptic feedback is given to the subject through the actuators of the device, which pull the hand towards the next waypoint (Section~\ref{sec:guidance}). Once the hand is inside the sphere of a waypoint, the device holds it there for 0.7~s before pulling it towards the next one, to give the subject the time to memorise the position of every waypoint. The experimenter can lower the guidance force; at the lowest level the stays on the waypoints are removed, so that the subject gets used to traversing the path without stopping on the waypoints before the guidance is removed altogether.
-
-\subparagraph{Motor Representation} Neither the haptic nor the visual feedback is used during the recording phase, but only in a previous phase called pre-training. During this step, the user is guided through the path, with the visual and the haptic feedback, until they feel confident and the experimenter agrees. This allows the subject to obtain a representation of the path inside their motor cortex, which is a fundamental aspect of human motion. The recordings are then made with the screen hidden and without guidance, apart from the transfer to the first waypoint, while the system collects the movements.
-
-\subparagraph{Curvature Representation}
-The only issue with representing a path only by a sequence of points is that it only takes into account direct links between waypoints. Humans rapid movements don't go straight from one point to the following one. Instead, they try to store momentum by not stopping on each point, but making curves during the execution. This aspect must be extracted from the dataset and learned by the generative model, since it is a fundamental aspect of human motion.
-
-An idea to make this aspect stand out from the collected data could be the introduction of arrows in the visual environment, although this means crowding it with more information that could be distracting or hard to interpret for the user. Also, this requires defining other tunable parameters, since the arrows would have to be placed at a specific distance from the waypoint it starts from, with a specific length, at a specific size and orientation. However, by only specifying the waypoints, the user is free to interpret the path in their own way, and thus they can execute it in a more natural way, which is what the experiments aim to achieve. In the end, it is mandatory to explain to the user that they are supposed to follow the path by trying to reach the waypoints, but not strongly forcing themselves to cross and step on them, since this would lead to unnatural movements: the user should be encouraged to follow the path smoothly.
-
-\subsection{Path Taxonomy}
-The paths shown to the subjects are the sixteen tasks of Section~\ref{sec:task_design}, grouped into three families by their number of strokes (Table~\ref{tab:tasks}): single strokes (\texttt{BURSTs}), two strokes separated by a turn (\texttt{BURSTc}, \texttt{CHECK}, \texttt{HOOK} and \texttt{REVERSAL}) and letters of three strokes (\texttt{LETTER}). Paths of constant or slowly varying curvature, such as circles, ellipses, spirals and helices, are not included, since they do not induce a speed minimum at their waypoints (Section~\ref{sec:task_design}); neither are cursive letters, whose strokes do not end at well-defined corners. The last column of the table assigns every task to the training, validation or test set of the generative model (Section~\ref{sec:data_split}).
-
-\begin{table}[htbp]
-    \centering
-    \caption{Tasks of the experimental campaign: number of waypoints and strokes, plane of the waypoints in the device frame, angle between consecutive segments at the inner waypoints, and set of the generative model.}
-    \label{tab:tasks}
-    \begin{tabular}{llllll}
-        \toprule
-        Task & Waypoints & Strokes & Plane & Turn angle & Set\\
-        \midrule
-        \texttt{BURSTs\_XY}    & 2 & 1 & $XY$ & --                     & training\\
-        \texttt{BURSTs\_XZ}    & 2 & 1 & $XZ$ & --                     & validation\\
-        \texttt{BURSTs\_YZ}    & 2 & 1 & $YZ$ & --                     & test\\
-        \midrule
-        \texttt{BURSTc\_XY}    & 3 & 2 & $XY$ & $41^\circ$             & training\\
-        \texttt{BURSTc\_XZ}    & 3 & 2 & $XZ$ & $41^\circ$             & test\\
-        \texttt{BURSTc\_YZ}    & 3 & 2 & $YZ$ & $41^\circ$             & validation\\
-        \texttt{CHECK\_XY}     & 3 & 2 & $XY$ & $71^\circ$             & training\\
-        \texttt{CHECK\_XZ}     & 3 & 2 & $XZ$ & $71^\circ$             & training\\
-        \texttt{HOOK\_XY}      & 3 & 2 & $XY$ & $72^\circ$             & training\\
-        \texttt{HOOK\_YZ}      & 3 & 2 & $YZ$ & $72^\circ$             & training\\
-        \texttt{REVERSAL\_Z}   & 3 & 2 & $XZ$, along $Z$ & $4^\circ$   & training\\
-        \texttt{REVERSAL\_3D}  & 3 & 2 & none & $33^\circ$             & test\\
-        \midrule
-        \texttt{LETTER\_N}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & training\\
-        \texttt{LETTER\_S}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & validation\\
-        \texttt{LETTER\_Z}     & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & test\\
-        \texttt{LETTER\_NABLA} & 4 & 3 & $XY$ & $45^\circ$, $45^\circ$ & validation\\
-        \bottomrule
-    \end{tabular}
-\end{table}
 \section{Evaluation Metrics}
 \label{sec:evaluation_metrics}
-As stated in the definition of the problem, a generated movement has no single ground truth, so the network is evaluated against the distribution of the recorded strokes, in three ways.
+As stated in the definition of the problem, a generated movement has no single ground truth, so the network is evaluated against the distribution of the features extracted by the recorded strokes, in three ways.
 
-\paragraph{Loss}
+\subsection{Validation Loss}
+\label{sec:validation_loss}
 The validation loss of Equation~\eqref{eq:nll_loss}, in nats per stroke, measures how probable the recorded strokes of the validation tasks are under the predicted mixtures, given their recorded history. It is the criterion of the model selection, and is reported separately for first and later strokes, since their densities are defined over spaces of different dimension.
 
-\paragraph{Probability integral transform}
-A small loss does not guarantee that the predicted spread is right. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic}, in its multivariate form based on highest-density regions. For a recorded stroke $\sym{obs}$ with predicted density $\sym{qtheta}$, restricted to the dimensions that exist for the stroke,
+\subsection{Probability Integral Transform}
+\label{sec:pit}
+A small loss does not guarantee that the predicted spread is right. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic}, in its multivariate form based on highest-density regions. For a recorded stroke $\sym{obs}$ with predicted density $\sym{qtheta}$, computed from its recorded history as for the loss and restricted to the dimensions that exist for the stroke,
 \begin{equation}
-    u=\Pr_{Y\sim \sym{qtheta}}\left[\sym{qtheta}(Y)\le \sym{qtheta}(\sym{obs})\right]
+    u=\Pr_{\sym{predsample}\sim \sym{qtheta}}\left[\sym{qtheta}(\sym{predsample})\le \sym{qtheta}(\sym{obs})\right]
 \end{equation}
-is the probability that a stroke drawn from the prediction is less probable than the recorded one, estimated with 1000 samples per stroke. If the prediction is calibrated, $u$ is uniform in $[0,1]$, and the recorded stroke falls inside the highest-density region of nominal probability $\alpha$ for a fraction $\alpha$ of the strokes, since it lies inside that region exactly when $u\ge1-\alpha$. An excess of large values of $u$ means that the prediction is too wide, an excess of small values that it is too narrow or misplaced. The coverage of the 50\,\% and 90\,\% regions summarises the histogram of $u$.
+is the probability that a stroke $\sym{predsample}$ drawn from the prediction is less probable than the recorded one, estimated with 1000 samples per stroke. If the prediction is calibrated, $u$ is uniform in $[0,1]$, and the recorded stroke falls inside the highest-density region of nominal probability $\alpha$ for a fraction $\alpha$ of the strokes, since it lies inside that region exactly when $u\ge1-\alpha$. An excess of large values of $u$ means that the prediction is too wide, an excess of small values that it is too narrow or misplaced. The coverage of the 50\,\% and 90\,\% regions summarises the histogram of $u$.
 
-\paragraph{Precision, density and coverage}
-The strokes generated in free running, where every stroke is conditioned on the generated history, are compared with the recorded strokes of the same task in the space of the output features that exist for them, standardised with the mean and standard deviation of the recorded strokes of the task; first strokes and later strokes are compared separately. The recorded strokes are split at random into two halves. Every stroke $r_j$ of the first half, $j=1,\dots,N$, defines a ball centred on it with radius equal to the distance from its $k$-th nearest neighbour in the same half, with $k=5$. The generated strokes $g_i$, $i=1,\dots,M$, subsampled to the size of the second half, give
+\subsection{Precision, Density and Coverage}
+\label{sec:precision_density_coverage}
+The strokes generated in free running, where every stroke is conditioned on the generated history, are compared with the recorded strokes of the same task in the space of the output features defined for them, standardised with the mean and standard deviation of the recorded strokes of the task; first strokes and later strokes are compared separately. The recorded trials are split at random into two halves, so that all the strokes of a trial fall in the same half. Every recorded stroke $r_j$ of the first half, $j=1,\dots,N$, defines the closed ball $B_j=\{x:\lVert x-r_j\rVert\le\rho_j\}$, where $\rho_j$ is the distance from $r_j$ to its $k$-th nearest neighbour among the other strokes of the same half, with $k=5$. The generated strokes are subsampled at random to the number $M$ of recorded strokes in the second half, giving $g_i$, $i=1,\dots,M$, and
 \begin{equation}
     \begin{gathered}
-        \text{precision}=\frac1M\sum_{i=1}^{M}\mathbb 1\left[\exists j:\ g_i\in B_j\right],\qquad
-        \text{coverage}=\frac1N\sum_{j=1}^{N}\mathbb 1\left[\exists i:\ g_i\in B_j\right],\\
-        \text{density}=\frac1{kM}\sum_{i=1}^{M}\sum_{j=1}^{N}\mathbb 1\left[g_i\in B_j\right].
+        \text{precision}=\frac1M\sum_{i=1}^{M}\mathds 1\left[\exists j:\ g_i\in B_j\right],\qquad
+        \text{coverage}=\frac1N\sum_{j=1}^{N}\mathds 1\left[\exists i:\ g_i\in B_j\right],\\
+        \text{density}=\frac1{kM}\sum_{i=1}^{M}\sum_{j=1}^{N}\mathds 1\left[g_i\in B_j\right],
     \end{gathered}
 \end{equation}
-Precision~\cite{kynkaanniemi2019improved} is the fraction of generated strokes that fall in the region of the recorded ones; density~\cite{naeem2020reliable} also counts how many recorded neighbourhoods contain each of them, so that it is about one when the two distributions match and exceeds one when the generated strokes crowd the densest region; coverage~\cite{naeem2020reliable} is the fraction of recorded neighbourhoods reached by at least one generated stroke, and measures diversity. The values are averaged over 30 random splits. The second half of the recorded strokes, scored in the same way, gives the values that a generator indistinguishable from the subjects would reach. For every task, as many sequences are generated as there are recorded trials, each with its own random seed, at the determinism values $\sym{determinism}=0,0.1,\dots,1$.
+where $\mathds 1[\cdot]$ equals one when its argument holds and zero otherwise.
+Precision~\cite{kynkaanniemi2019improved} is the fraction of generated strokes that fall in the region of the recorded ones; density~\cite{naeem2020reliable} also counts how many recorded neighbourhoods contain each of them, so that its expected value is one when the two distributions match and it exceeds one when the generated strokes crowd the densest region; coverage~\cite{naeem2020reliable} is the fraction of recorded neighbourhoods reached by at least one generated stroke, and measures diversity; when the two distributions match and $M=N$, its expected value approaches $1-2^{-k}$ rather than one~\cite{naeem2020reliable}. The three metrics are computed for $S=30$ random splits, each with its own subsample of the generated strokes, and their mean and standard deviation over the splits are reported. In every split, the second half of the recorded strokes, scored in the same way, gives the values that a generator indistinguishable from the subjects would reach. For every task, as many sequences are generated as there are recorded trials, each with its own random seed, at the determinism values $\sym{determinism}=0,0.1,\dots,1$.
 
 \section{Experimental Data}
 \label{sec:experimental_data}
@@ -1316,7 +1338,7 @@ The settings of the data processing pipeline introduced in Chapter~3 are listed 
 \end{table}
 
 \subsection{Reconstruction Quality}
-The loss of information of the representation is measured on every reconstructed recording, over the span of its kept strokes, by two mean squared errors: between the recorded speed and the sum of the lognormals of the strokes, and between the recorded positions and the Bézier chain at equal normalized arc length, averaged over the samples and over the three coordinates. Their distributions by family are shown in Figure~\ref{fig:reconstruction_errors} and summarised in Table~\ref{tab:reconstruction_errors}, where the square roots of the medians give the errors in the units of speed and length.
+The loss of information of the representation is measured on every reconstructed recording, over the span of its kept strokes, by two mean squared errors: between the recorded speed and the sum of the lognormals of the strokes, and between the recorded positions and the Bézier chain at equal normalized arc length, averaged over the samples and over the three coordinates. Their distributions by family are shown in Figure~\ref{fig:reconstruction_errors} where the square roots of the medians give the errors in the units of speed and length.
 
 \begin{figure}[htbp]
     \centering
@@ -1324,27 +1346,6 @@ The loss of information of the representation is measured on every reconstructed
     \caption{Reconstruction error of the 3090 recordings by family of tasks, on a logarithmic scale: speed (left) and path (right). Boxes span the 25th to the 75th percentile, lines are the medians, whose values are written above, and whiskers span the 5th to the 95th percentile.}
     \label{fig:reconstruction_errors}
 \end{figure}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Median reconstruction errors by family. The root mean squared error of the speed is the square root of its mean squared error; the RMS distance of the path is the square root of three times its mean squared error, which is averaged over the three coordinates.}
-    \label{tab:reconstruction_errors}
-    \begin{tabular}{lrrrr}
-        \toprule
-        Family & \multicolumn{2}{c}{Speed} & \multicolumn{2}{c}{Path}\\
-        & MSE [(mm/s)$^2$] & RMSE [mm/s] & MSE [mm$^2$] & RMS distance [mm]\\
-        \midrule
-        \texttt{BURSTs}   & 374  & 19 & 0.107 & 0.57\\
-        \texttt{BURSTc}   & 1106 & 33 & 0.124 & 0.61\\
-        \texttt{CHECK}    & 873  & 30 & 0.138 & 0.64\\
-        \texttt{HOOK}     & 733  & 27 & 0.057 & 0.41\\
-        \texttt{REVERSAL} & 932  & 31 & 0.191 & 0.76\\
-        \texttt{LETTER}   & 1258 & 35 & 0.139 & 0.65\\
-        \midrule
-        All               & 948  & 31 & 0.122 & 0.60\\
-        \bottomrule
-    \end{tabular}
-\end{table}
 
 The geometric representation is accurate: the median distance between the recorded and the reconstructed path is below one millimetre, on paths some ten centimetres long. The kinematic representation is less tight, with a median error of about 31~mm/s on peak speeds of several hundred millimetres per second, and a median signal-to-noise ratio of the speed over the whole recording of 21.3~dB. Its error is lowest for the single strokes, whose speed is a single lognormal, and highest for the letters, whose three strokes overlap; in the recordings inspected, the largest deviations lie in the valleys between consecutive strokes and in the final tail of the movement, where the recorded speed does not follow the shape of a lognormal. Among the paths, the reversals have the largest error, probably because a cubic segment cannot follow the sharp turn of the hand at the reversal point.
 
@@ -1390,14 +1391,50 @@ The grid of Table~\ref{tab:hyperparameter_grid} contains $2^9\cdot3^2=4608$ conf
     \end{tabular}
 \end{table}
 
-The largest angle of the rotations dominates all the other hyperparameters: on average over the rest of the grid, rotations up to $180^\circ$ lower the validation loss by 1.47 nats per stroke with respect to rotations up to $30^\circ$. With rotations limited to $30^\circ$ the planes of the recordings are kept, and a validation task drawn on a plane never seen in training is effectively a new shape; with rotations in any direction every task is seen in every orientation. All the following analyses use the 2304 configurations with rotations up to $180^\circ$. Figure~\ref{fig:hyperparameter_effects} shows the effect of every other hyperparameter, averaged over all the combinations of the rest. The number of components is the most important: two components are better than four, and four better than six. Smaller widths of the LSTM and smaller batches are better, while the wider head is better than the narrower one. The other hyperparameters change the loss by less than 0.03 nats per stroke. The fifteen best configurations have mean validation losses within 0.06 nats per stroke of each other, less than the variation between seeds, and share the values of the most important hyperparameters: two components, an LSTM width of 32, a head width of 64 and rotations up to $180^\circ$ with probability one. One of them was taken, and its values are the best ones of every panel of Figure~\ref{fig:hyperparameter_effects}.
+The largest angle of the rotations dominates all the other hyperparameters: on average over the rest of the grid, rotations up to $180^\circ$ lower the validation loss by 1.47 nats per stroke with respect to rotations up to $30^\circ$. With rotations limited to $30^\circ$ the planes of the recordings are kept, and a validation task drawn on a plane never seen in training is effectively a new shape; with rotations in any direction every task is seen in every orientation. All the following analyses use the 2304 configurations with rotations up to $180^\circ$. Table~\ref{tab:hyperparameter_effects} shows the effect of every other hyperparameter, averaged over all the combinations of the rest. The number of components is the most important: two components are better than four, and four better than six. Smaller widths of the LSTM and smaller batches are better, while the wider head is better than the narrower one. The other hyperparameters change the loss by less than 0.03 nats per stroke. The fifteen best configurations have mean validation losses within 0.06 nats per stroke of each other, less than the variation between seeds, and share the values of the most important hyperparameters: two components, an LSTM width of 32, a head width of 64 and rotations up to $180^\circ$ with probability one. One of them was taken, and its values are the best ones of every hyperparameter in Table~\ref{tab:hyperparameter_effects}.
 
-\begin{figure}[htbp]
+\begin{table}[htbp]
     \centering
-    \includegraphics[width=\linewidth]{results/hyperparameter_effects.pdf}
-    \caption{Effect of the hyperparameters on the validation loss, over the 2304 configurations with rotations up to $180^\circ$. Top: difference between the best and the worst value of every hyperparameter, with its 95\,\% interval. Bottom: mean validation loss of the configurations with each value, all panels on the same scale; the 95\,\% intervals are smaller than the dots, the rings mark the chosen values and the dotted lines the mean of all the configurations.}
-    \label{fig:hyperparameter_effects}
-\end{figure}
+    \caption{Effect of the hyperparameters on the validation loss, over the 2304 configurations with rotations up to $180^\circ$. For every value of a hyperparameter, the mean negative log-likelihood of the validation strokes, in nats per stroke, of the configurations with that value, every other hyperparameter varied; its 95\,\% interval from the seeds is within $\pm0.003$, and the mean of all the configurations is 12.557. The hyperparameters are sorted by the difference between their worst and best value, given with its 95\,\% interval; the values of the chosen network, in bold, are the best ones of every hyperparameter.}
+    \label{tab:hyperparameter_effects}
+    \begin{tabular}{llccc}
+        \toprule
+        Hyperparameter & Value & Mean NLL & Worst $-$ best & 95\,\% interval \\
+        \midrule
+        \multirow{3}{*}{Mixture components}       & \textbf{2}                         & \textbf{12.490} & \multirow{3}{*}{0.133} & \multirow{3}{*}{[0.129, 0.138]} \\
+                                                  & 4                                  & 12.559          &                        &                                 \\
+                                                  & 6                                  & 12.623          &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{LSTM width}               & \textbf{32}                        & \textbf{12.531} & \multirow{2}{*}{0.052} & \multirow{2}{*}{[0.049, 0.056]} \\
+                                                  & 64                                 & 12.583          &                        &                                 \\
+        \midrule
+        \multirow{3}{*}{Recordings per batch}     & \textbf{4}                         & \textbf{12.539} & \multirow{3}{*}{0.049} & \multirow{3}{*}{[0.044, 0.053]} \\
+                                                  & 8                                  & 12.546          &                        &                                 \\
+                                                  & 16                                 & 12.587          &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Head width}               & 32                                 & 12.580          & \multirow{2}{*}{0.046} & \multirow{2}{*}{[0.042, 0.049]} \\
+                                                  & \textbf{64}                        & \textbf{12.534} &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Weight decay}             & 0                                  & 12.572          & \multirow{2}{*}{0.029} & \multirow{2}{*}{[0.025, 0.032]} \\
+                                                  & \textbf{\boldmath$10^{-4}$}        & \textbf{12.543} &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Gradient clipping}        & \textbf{1}                         & \textbf{12.543} & \multirow{2}{*}{0.028} & \multirow{2}{*}{[0.025, 0.032]} \\
+                                                  & 10                                 & 12.571          &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Dropout}                  & \textbf{0.2}                       & \textbf{12.543} & \multirow{2}{*}{0.028} & \multirow{2}{*}{[0.024, 0.031]} \\
+                                                  & 0.4                                & 12.571          &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Learning rate}            & $10^{-4}$                          & 12.569          & \multirow{2}{*}{0.023} & \multirow{2}{*}{[0.019, 0.026]} \\
+                                                  & \textbf{\boldmath$3\times10^{-4}$} & \textbf{12.546} &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Augmentation probability} & 0.75                               & 12.568          & \multirow{2}{*}{0.021} & \multirow{2}{*}{[0.017, 0.024]} \\
+                                                  & \textbf{1}                         & \textbf{12.547} &                        &                                 \\
+        \midrule
+        \multirow{2}{*}{Noise on previous stroke} & \textbf{0.02}                      & \textbf{12.549} & \multirow{2}{*}{0.016} & \multirow{2}{*}{[0.012, 0.019]} \\
+                                                  & 0.1                                & 12.565          &                        &                                 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Final Network}
 The chosen network has the layers of Table~\ref{tab:final_network}, for a total of 23\,474 parameters, half of which belong to the layer of the Cholesky factors. For a batch of $B$ recordings, where the longest one has $T$ strokes and all together have $N$ strokes, the inputs of the strokes are padded to the longest recording before the LSTM, and the padding is removed after it.
@@ -1509,7 +1546,43 @@ Finally, Figure~\ref{fig:dpc} and Table~\ref{tab:dpc} compare the strokes genera
 % 5. Conclusion
 %==============================================================================
 \chapter{Conclusion}
-Write the conclusion here.
+This work set out to generate three-dimensional movements that are human-like because they are built from the same elementary units into which human movements can be decomposed. To this end, it combined a data collection system based on a haptic device, a reconstruction method that describes every movement as a sequence of lognormal strokes in time and Bézier segments in space, and a generative model that learns the distribution of the stroke parameters conditioned on the waypoints of a task. Eleven subjects executed sixteen tasks, and 3090 of their 3528 recordings were reconstructed, with a median path error below one millimetre and a median signal-to-noise ratio of the speed of 21.3~dB. A recurrent mixture density network with 23\,474 parameters, trained on 1466 recordings of eight tasks, predicts the strokes of tasks it has never seen with a loss close to that of the tasks used to select it; its predictions are calibrated for most strokes, and the strokes it generates are mostly plausible, although they reproduce only about half of the variety of the recorded ones (Section~\ref{sec:system_evaluation}).
+
+To solve a problem as a human would, it is necessary think as one. A deep network trained on raw, unfiltered signals would have to discover the organisation of human movement by itself, and to generalise beyond the tasks it was trained on, with far more data than a laboratory campaign can provide. Describing the movements through features that carry a meaning for motor control, such as the timing of a stroke, its shape and the direction towards the next waypoint, allowed a small network to learn their distribution from a few thousand strokes and to transfer it to new arrangements of waypoints.
+
+More control over the features, however, also means more room for bias. Every stage of the pipeline introduces its own errors (Figure~\ref{fig:methodology_dataflow}), and none of them can be removed completely: they have to be known, bounded where possible, and accepted as part of the result.
+
+\paragraph{Limitations}
+The first source of bias is the acquisition. The workspace of the device is narrow and not isotropic, roughly a rectangular parallelepiped in which the $z$ axis offers less room than the $y$ axis, which in turn offers less than the $x$ axis. The tasks were placed inside a cubic region that fits in all three directions, but the subjects were still wary of hitting the body of the device with the stylus, which reduced the space they actually used. The friction of the device and the training it requires are further differences from a free movement of the arm.
+
+The second source is the reconstruction. The amplitude of a stroke is fixed by its path, but its onset, log-time delay and log-response time are not equally constrained by the speed profile: the position and the width of the bell fix only two combinations of them, and the third depends on the skewness, which lies in the flanks where consecutive strokes overlap (Equation~\eqref{eq:lognormal_family}). The log-response time is therefore the least reliable of the extracted parameters, and the onset and the log-time delay inherit its error. Every error of the reconstruction is passed on to the generative model, which learns the distribution of the extracted parameters rather than that of the recorded movements, while the movements it generates are eventually compared with recorded signals.
+
+The third source lies in the generative model, which inherits these artefacts. Replacing the onset with the delay between consecutive peaks (Section~\ref{sec:features}) removes the worst-conditioned quantity, but the log-time delay and the log-response time remain among the outputs, and part of the correlation between them that the mixture learns may come from the extraction rather than from the subjects. Moreover, the family of equivalent solutions is curved, and a mixture of two Gaussian components can follow it only approximately. Finally, the evaluation compares the strokes in the space of the features, and the generated movements have not yet been executed by a robot.
+
+\paragraph{Contributions to neuroscience}
+Although its aim is an engineering one, this work returns five results to the study of human movement. First, it provides a dataset of three-dimensional movements, recorded from eleven subjects on sixteen tasks that were first learned with guidance and then executed without it; since most applications of the Kinematic Theory concern planar handwriting and signatures (Chapter~\ref{ch:sota}), such data are rare, and they can support analyses beyond those of this thesis. Second, it provides a method that describes spatial movements as lognormal strokes in time and Bézier segments in space, in a field where few tools operate in three dimensions~\cite{idelog3d}. Third, it shows which combinations of the lognormal parameters the kinematics constrains, namely the position and the width of each bell, and which it leaves undetermined (Equation~\eqref{eq:lognormal_family}). The result concerns any extractor that estimates the three parameters from the speed profile, and it implies that the onset, the log-time delay and the log-response time of a stroke can be interpreted physiologically only when an assumption or an independent measurement fixes one of them. Fourth, the generator is a test of sufficiency: the positions of the target points and the previous stroke are enough to predict the strokes of tasks never seen, with distributions that are calibrated for most strokes. This gives a quantitative baseline for richer models, and a reference distribution under which the strokes of other subjects or populations can be scored. Fifth, the determinism $\sym{determinism}$ turns the generator into a source of stimuli whose closeness to the recorded behaviour can be set continuously, for experiments in which the human-likeness of a movement is the manipulated variable.
+
+\paragraph{Position within neuroscience}
+This work describes movement at the level of the kinematics of the hand, that is, at the output of the whole chain reviewed in Chapter~\ref{ch:sota}, from the selection of the goal and the planning in the premotor areas to the execution by the primary motor cortex, the brainstem and the spinal cord. It is a model of behaviour rather than of neural activity: it does not say which structure produces a stroke, and, since the lognormal describes the output of the whole neuromuscular cascade, any correspondence between a stroke and a neural module remains a hypothesis at the kinematic level. Within these limits, several hypotheses of motor neuroscience become structural choices of the generator, and its behaviour can be read against them.
+
+First, the generator is conditioned only on the positions of the waypoints and on the previous stroke, with no input describing the subject or the joints of the arm. This mirrors the hypothesis that a movement is stored as an effector-independent sequence of target points, executed through an effector-dependent sequence of motor commands~\cite[pp.~34--38]{senatore2012}, and the observation that plans expressed in task space produce regular hand paths and speed profiles while the corresponding joint trajectories vary widely~\cite[pp.~725--726]{wolpert2021}. That a network built on these inputs predicts the strokes of unseen tasks almost as well as those of the tasks used to select it is consistent with such a plan, although it cannot prove it.
+
+Second, new movements are composed of the same units into which the recorded ones were decomposed. If strokes are movement primitives, each the output of an agonist--antagonist synergy~\cite{plamondon2003,woch2004}, the generator is a computational counterpart of the observation that a new behaviour is learned easily when it can be approximated by combining existing primitives~\cite[p.~734]{wolpert2021}: its ability to generalise to new arrangements of waypoints rests on the same recombination.
+
+Third, the generator predicts a distribution rather than a single trajectory, so the variability between repetitions is part of the model instead of an error to be averaged out. According to the minimal intervention principle, variability should be reduced along the dimensions relevant to the task and left free along the others~\cite[pp.~728--729]{wolpert2021}. The covariance predicted for each stroke, expressed in frames tied to the waypoints, is a natural place to look for this structure, for instance by comparing the spread of the end of a stroke along and across the direction of its waypoint.
+
+Fourth, the tasks were learned during the session, and the expected transition from slow point-to-point movements to a smooth sequence executed as a whole~\cite[pp.~34--38, 56--58]{senatore2012} has a direct kinematic signature in the delay between consecutive peaks, which measures how much the strokes overlap. Conditioning the generator on the repetition, or comparing the early and the late repetitions of each task, would follow this transition stroke by stroke. Similarly, since the lognormality of the speed profiles has been related to the quality of motor control, which develops with learning and declines with ageing~\cite{plamondon2013}, the reconstruction error and the predicted distributions could serve as references against which the movements of other populations are assessed.
+
+The identifiability of the parameters sets the limit of these readings. In the Kinematic Theory, the onset is the time at which the command of a stroke is issued, while the log-time delay and the log-response time describe the response of the neuromuscular system; yet only the position and the width of each bell are well determined by the kinematics. A single parameter can therefore be interpreted physiologically only if something else fixes it. iDeLog fixes the onset by assumption, setting the delay between command and movement to about 0.5~s~\cite{idelog}, but a measurement would be preferable. Electroencephalography has already been used to relate the timing of a motor command to the Kinematic Theory~\cite{oreilly2013eeg}, and electromyography can locate the agonist and antagonist bursts that the theory associates with each stroke~\cite[p.~755]{enoka2021}. An independent estimate of the onset reduces the family of Equation~\eqref{eq:lognormal_family} to a single member, so the measurements proposed at the end of Chapter~\ref{ch:sota} would serve two purposes at once: testing the neural basis of the strokes and making their parameters identifiable.
+
+\paragraph{Future work}
+Each limitation suggests a direction. Motion capture or other contactless trackers would remove the constraints of the workspace of the device, its friction and the training it requires, and would allow the movements of the whole arm to be recorded. The reconstruction and the generator could work only with well-conditioned quantities: following the reparameterisation that removes the instability of embedded models~\cite{cheng1992embedded}, the network could predict the peak time, the width and the log-response time of every stroke, and the onset and the log-time delay would be computed from them through Equation~\eqref{eq:lognormal_family}, so that the uncertainty of the extraction would be confined to a single output. The evaluation could be moved from the features to the trajectories, by comparing the generated and the recorded speed profiles and paths directly.
+
+New experiments would answer the questions that the present campaign leaves open. All the tasks with four waypoints are letters, so the effect of semantic content cannot be separated from that of the number of strokes: tasks with four waypoints and no meaning, with the same turn angles as the letters, would provide the missing control. A single session may capture only the beginning of learning; sessions repeated over several days would show whether the delay between consecutive peaks and the lognormality of the strokes evolve towards the smooth and anticipatory execution of the second stage of learning~\cite[pp.~34--38, 56--58]{senatore2012}. Recording other populations, such as children, older adults or people with motor disorders, and scoring their strokes under the distribution predicted by the generator would turn it into a reference for the assessment of motor control, in line with the relation between lognormality, learning and ageing~\cite{plamondon2013}. Finally, a perceptual experiment, in which observers, or subjects guided along the movements by the haptic device, compare generated, recorded and minimum-jerk movements of the same task, would measure whether the generated movements are perceived as human, which neither the loss nor the comparison of the features can establish.
+
+The generated movements should also be executed by a robot in physical interaction with a human partner. Motor resonance with a robot has been observed when it moves with biological velocity profiles~\cite{kupferberg2011,bisio2014}, humans guided by a robot apply lower forces when it moves with a biological velocity pattern~\cite{maurice2018}, and adherence to a lognormal profile has been related to perceived comfort~\cite{coccaro}. The generator offers a controlled way to test these effects, through the determinism $\sym{determinism}$ and by executing the same tasks with lognormal and with minimum-jerk profiles.
+
+Achieving these results with sources of bias not fully removed and with a network of a few tens of thousands of parameters suggests that the approach is effective in its simplicity: the reconstruction compresses each stroke into a handful of parameters with a meaning for motor control, and from fewer than fifteen hundred training recordings the generator learns how humans arrange these parameters to reach waypoints in arrangements it has never seen.
 
 %==============================================================================
 % 6. Bibliography

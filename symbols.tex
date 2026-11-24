@@ -17,6 +17,7 @@
 \defsymbol{sigma}{\sigma\symsub}{log-response time of a stroke}
 \defsymbol[m]{amplitude}{D\symsub}{amplitude of a stroke, the length of the path it describes}
 \defsymbol[s$^{-1}$]{lognormal}{\Lambda\symsub}{lognormal speed profile of unit area}
+\defsymbol[s$^2$]{tvar}{V\symsub}{variance of the lognormal speed profile of a stroke, seen as a distribution over time}
 \defsymbol[m/s]{velocity}{\vec v\symsub}{velocity of the end effector; $\vec v_n$ is the measured velocity of sample $n$}
 \defsymbol{nsegments}{M}{number of strokes of a movement; in a recording, the number of kept strokes (segments)}
 
@@ -124,3 +125,6 @@
 \defsymbol{loss}{\mathcal L}{training loss, the mean negative log-likelihood per stroke}
 \defsymbol{nbatch}{N_b}{number of strokes of a batch}
 \defsymbol{dimset}{S\symsub}{output dimensions that exist for a stroke}
+
+% ------------------------------------------------------------------ evaluation
+\defsymbol{predsample}{\hat x\symsub}{output features of a stroke sampled from the predicted density $q_\theta$}
