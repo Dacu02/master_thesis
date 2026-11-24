@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../ros2_ws"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

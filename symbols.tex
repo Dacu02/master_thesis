@@ -128,3 +128,11 @@
 
 % ------------------------------------------------------------------ evaluation
 \defsymbol{predsample}{\hat x\symsub}{output features of a stroke sampled from the predicted density $q_\theta$}
+\defsymbol[m]{tubepoint}{\tilde p\symsub}{point of a path aligned by normalized arc length; $\tilde p_{k,m}$ is point $m$ of segment $k$}
+\defsymbol[m]{tubemean}{\bar p\symsub}{mean of the aligned recorded paths at a point of the tube}
+\defsymbol[m$^2$]{tubecov}{\Gamma\symsub}{covariance of the aligned recorded paths at a point of the tube}
+\defsymbol{tubebasis}{\Omega\symsub}{orthonormal basis of the plane orthogonal to the mean path at a point of the tube}
+\defsymbol{mahal}{d_{\mathrm M\symsep\symidx}}{Mahalanobis distance of a point of a path from the recorded paths}
+\defsymbol{tailprob}{Q\symsub}{tail probability of the Mahalanobis distance at a point of a path}
+\defsymbol{pathscore}{Q_{\min}}{score of a path, the smallest tail probability over its points}
+\defsymbol{tubethreshold}{Q^\ast}{threshold of the whole-path tube}

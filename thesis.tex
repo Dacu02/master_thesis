@@ -1025,10 +1025,10 @@ Besides dropout, the training uses five measures.
 The weights are optimised with Adam~\cite{kingma2015adam} at a constant learning rate. After every epoch the loss is evaluated on the validation tasks, with dropout disabled and without noise or rotations; the weights with the lowest validation loss are saved and restored at the end. The training stops when the validation loss has not improved for a given number of epochs, or after a maximum number of epochs. Every configuration is trained with several seeds, which set the initialisation, the order of the batches, the rotations and the noise, and its results are averaged over the seeds.
 
 \paragraph{Hyperparameter search}
-The architecture hyperparameters of Section~\ref{sec:network_architecture}, the number of recordings per batch, the learning rate, the weight decay, the clipping threshold, the probability and the largest angle of the rotations and the standard deviation of the noise on the previous stroke are chosen by a grid search: every combination is trained with every seed and ranked by its validation loss averaged over the seeds. The best configurations differ by less than the variability of the loss between seeds, so any of them would serve, and one of them was taken. The grid, the chosen values and the effect of every hyperparameter are reported in Chapter~\ref{ch:validation}.
+The architecture hyperparameters of Section~\ref{sec:network_architecture}, the number of recordings per batch, the learning rate, the weight decay, the clipping threshold, the probability and the largest angle of the rotations and the standard deviation of the noise on the previous stroke are chosen by a grid search: every combination is trained with every seed and ranked by its validation loss averaged over the seeds. The best configurations differ by less than the variability of the loss between seeds, so the one that takes the best value of every hyperparameter was taken. The grid, the chosen values and the effect of every hyperparameter are reported in Chapter~\ref{ch:validation}.
 
 \paragraph{Evaluation}
-Besides the loss, the software evaluates a trained network in two ways. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic} of the recorded strokes, with the network fed the recorded history. The strokes it generates are compared with the recorded ones through the precision~\cite{kynkaanniemi2019improved}, density and coverage~\cite{naeem2020reliable} metrics: precision and density measure the fidelity of the generated strokes, that is, how close they lie to the recorded ones, while coverage measures their diversity, that is, how much of the variety of the recorded strokes they reproduce. These metrics and their results are presented in Chapter~\ref{ch:validation}.
+Besides the loss, the software evaluates a trained network in three ways. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic} of the recorded strokes, with the network fed the recorded history. The strokes it generates are compared with the recorded ones through the precision~\cite{kynkaanniemi2019improved}, density and coverage~\cite{naeem2020reliable} metrics: precision and density measure the fidelity of the generated strokes, that is, how close they lie to the recorded ones, while coverage measures their diversity, that is, how much of the variety of the recorded strokes they reproduce. Finally, the paths of the generated movements are compared with the recorded paths of the same task through a probabilistic tube built from the recorded paths, which tells whether a generated path lies where the paths of the subjects lie, without being more or less variable than them. These metrics and their results are presented in Chapter~\ref{ch:validation}.
 
 %==============================================================================
 % 4. Experimental Validation
@@ -1251,7 +1251,7 @@ Those are the same inputs and outputs of the generative model, with the exceptio
 % \end{equation}
 \section{Evaluation Metrics}
 \label{sec:evaluation_metrics}
-As stated in the definition of the problem, a generated movement has no single ground truth, so the network is evaluated against the distribution of the features extracted by the recorded strokes, in three ways.
+As stated in the definition of the problem, a generated movement has no single ground truth, so the network is evaluated against the distribution of the features extracted by the recorded strokes, in three ways, and against the distribution of the recorded paths, in a fourth one.
 
 \subsection{Validation Loss}
 \label{sec:validation_loss}
@@ -1277,6 +1277,57 @@ The strokes generated in free running, where every stroke is conditioned on the 
 \end{equation}
 where $\mathds 1[\cdot]$ equals one when its argument holds and zero otherwise.
 Precision~\cite{kynkaanniemi2019improved} is the fraction of generated strokes that fall in the region of the recorded ones; density~\cite{naeem2020reliable} also counts how many recorded neighbourhoods contain each of them, so that its expected value is one when the two distributions match and it exceeds one when the generated strokes crowd the densest region; coverage~\cite{naeem2020reliable} is the fraction of recorded neighbourhoods reached by at least one generated stroke, and measures diversity; when the two distributions match and $M=N$, its expected value approaches $1-2^{-k}$ rather than one~\cite{naeem2020reliable}. The three metrics are computed for $S=30$ random splits, each with its own subsample of the generated strokes, and their mean and standard deviation over the splits are reported. In every split, the second half of the recorded strokes, scored in the same way, gives the values that a generator indistinguishable from the subjects would reach. For every task, as many sequences are generated as there are recorded trials, each with its own random seed, at the determinism values $\sym{determinism}=0,0.1,\dots,1$.
+
+\subsection{Probabilistic Path Tube}
+\label{sec:path_tube}
+The previous metrics compare the strokes one by one, through their parameters. The probabilistic path tube compares whole paths in the space of the device, and therefore also measures how the errors of the strokes generated in free running accumulate along a movement, since every generated stroke starts where the previous one ended.
+
+\paragraph{Recorded paths}
+For every task, the reference is made of the complete recorded trials, taken from the original recordings, filtered and resampled as in the data processing pipeline, and cut at the nodes of their reconstruction, that is at the speed minima that separate the strokes, so that every path is made of one segment per stroke. The original recordings are preferred to the reconstructed Bézier chains, so that the tube does not include the error of the reconstruction.
+
+\paragraph{Alignment}
+To compare different paths point by point, every segment $k$ of a path is resampled at 60 values of normalized arc length, equally spaced in $[0,1]$: the point $\sym{tubepoint}_{k,m}$ lies at the same fraction of the length of segment $k$ in every path, whatever its speed profile, so that the tube compares the geometry of the movements and not their timing. Every path is then translated to start at the origin, like the generated paths, which start at the first waypoint.
+
+\paragraph{Gaussian cross-sections}
+Over the $n$ recorded paths $\sym{tubepoint}^{(j)}$, $j=1,\dots,n$, of the task, every point $(k,m)$ of the tube is described by its mean and its covariance,
+\begin{equation}
+    \sym{tubemean}_{k,m}=\frac1n\sum_{j=1}^{n}\sym{tubepoint}_{k,m}^{(j)},\qquad
+    \sym{tubecov}_{k,m}=\frac1{n-1}\sum_{j=1}^{n}\left(\sym{tubepoint}_{k,m}^{(j)}-\sym{tubemean}_{k,m}\right)\left(\sym{tubepoint}_{k,m}^{(j)}-\sym{tubemean}_{k,m}\right)^{\top}+\varepsilon^2 I,
+\end{equation}
+where $\varepsilon=0.1$~mm is a floor that keeps the covariance invertible where the recorded paths nearly coincide.
+
+\paragraph{Distance and tail probability}
+Inside a segment, the distance of a point from the recorded ones is measured in the plane orthogonal to the mean path, since a deviation along the direction of motion only means that the point is slightly ahead or behind, which the alignment already accounts for. With $\sym{tubebasis}_{k,m}\in\mathbb R^{3\times2}$ an orthonormal basis of that plane, the squared Mahalanobis distance of a point $\sym{tubepoint}_{k,m}$ is
+\begin{equation}
+    \sym{mahal}_{k,m}^2=\left(\sym{tubebasis}_{k,m}^{\top}\left(\sym{tubepoint}_{k,m}-\sym{tubemean}_{k,m}\right)\right)^{\top}
+        \left(\sym{tubebasis}_{k,m}^{\top}\sym{tubecov}_{k,m}\sym{tubebasis}_{k,m}\right)^{-1}
+        \sym{tubebasis}_{k,m}^{\top}\left(\sym{tubepoint}_{k,m}-\sym{tubemean}_{k,m}\right),
+\end{equation}
+while at the nodes, the first and the last point of every segment, the distance is computed in three dimensions, with $\sym{tubecov}_{k,m}$ in place of its projection. If the recorded points are Gaussian, whitening the deviation by the covariance turns $\sym{mahal}_{k,m}^2$ into the sum of the squares of two independent standard normal variables, three at the nodes, which follows a $\chi^2$ distribution with two or three degrees of freedom. The tail probability
+\begin{equation}
+    \sym{tailprob}_{k,m}=\Pr\left[\chi^2_2\ge \sym{mahal}_{k,m}^2\right]\ \text{inside a segment},\qquad
+    \sym{tailprob}_{k,m}=\Pr\left[\chi^2_3\ge \sym{mahal}_{k,m}^2\right]\ \text{at the nodes},
+\end{equation}
+is the probability that a recorded path passes even farther from the mean: close to one at the centre of the tube, close to zero where almost no subject passes. Since the density of a Gaussian depends on the point only through the Mahalanobis distance, $\sym{tailprob}_{k,m}$ is also the probability mass of the points less probable than $\sym{tubepoint}_{k,m}$, as in the PIT of Section~\ref{sec:pit}. A path is scored by its worst point,
+\begin{equation}
+    \sym{pathscore}=\min_{k,m}\sym{tailprob}_{k,m},
+\end{equation}
+since a single large deviation is enough for a path not to look human.
+
+\paragraph{Tube}
+A path has hundreds of points, so even a recorded path usually has some point with a small tail probability, and the minimum over many correlated tail probabilities has no simple distribution. The threshold of the tube is therefore calibrated on the recorded paths rather than taken from the $\chi^2$ distribution. Every recorded path is scored leave-one-out, with the mean and the covariance computed without it, so that it is out of sample like a generated path, and the threshold $\sym{tubethreshold}$ is the 5th percentile of these scores: the whole-path tube, made of the paths with $\sym{pathscore}\ge\sym{tubethreshold}$, contains by construction 95\,\% of the recorded paths. A pointwise tube contains the points with $\sym{tailprob}_{k,m}\ge0.05$. The Gaussian assumption thus only orders the points from the most central to the farthest, while the decision whether a path lies inside the tube is calibrated on the data, and holds even if the recorded points are not exactly Gaussian.
+
+\paragraph{Generated paths and scores}
+For every task and determinism, as many paths are generated in free running as there are recorded trials, each with its own seed; the Bézier chain of every generated path is sampled at the same normalized arc lengths as the recorded paths and translated to the origin. Four quantities are computed:
+\begin{itemize}
+    \item the fraction of generated paths inside the whole-path tube, about 95\,\% for a generator that reproduces the spread of the subjects, more for a generator less variable than them, less for one more variable or biased;
+    \item the mean fraction of the points of a generated path inside the pointwise tube, which tells whether a path outside the tube leaves it everywhere or only along a part;
+    \item the median of the scores $\sym{pathscore}$ of the generated paths;
+    \item the two-sample Kolmogorov--Smirnov distance between the scores $\sym{pathscore}$ of the generated paths and those of the recorded paths, scored leave-one-out, which compares how the two sets of paths are distributed inside the tube, and not only how many of them lie inside it.
+\end{itemize}
+
+\paragraph{Statistical tests}
+If the generator reproduces the spread of the subjects, every generated path falls inside the whole-path tube with the same probability as a recorded path, and the number of generated paths inside it follows a binomial distribution. An exact two-sided binomial test of this number against the fraction of recorded paths inside the tube tells whether the generator is significantly more variable, or more regular, than the subjects. The two-sample Kolmogorov--Smirnov test compares the distributions of the scores. Both tests are applied to every task, with a Holm correction over the sixteen tasks. Since the recorded scores are computed leave-one-out from the same recorded paths, they are not fully independent, and the $p$-values of the Kolmogorov--Smirnov test are approximate.
 
 \section{Experimental Data}
 \label{sec:experimental_data}
@@ -1357,9 +1408,35 @@ The tasks are divided into eight training, four validation and four test tasks (
 \label{sec:statistical_significance}
 Every configuration is trained with several seeds, and the variation of the validation loss between the seeds of the same configuration is the reference against which the differences between configurations are judged. In the hyperparameter grid (Section~\ref{sec:hyperparameter_search}) the standard deviation of the validation loss between the seeds of a configuration is about 0.07 nats per stroke. With 2304 configurations and three seeds each at the chosen rotation angle, an analysis of variance finds every main effect significant even after a Bonferroni correction, so the importance of a hyperparameter is judged by the size of its effect rather than by its $p$-value: only the number of components, the width of the LSTM, the number of recordings per batch and the width of the head change the loss by more than 0.04 nats per stroke.
 
-The best configurations of the grid differ by less than this variation between seeds, so their ranking is mostly due to chance, and the best average among many noisy averages is optimistic. To check that the choice among them does not matter, the four best configurations, which differ only in the learning rate ($10^{-4}$ or $3\cdot10^{-4}$) and in the number of recordings per batch (4 or 8), were trained again with 100 new seeds, the same for every configuration, so that they can be compared seed by seed. Their mean validation losses are 12.367, 12.374, 12.380 and 12.399 nats per stroke, against 12.28--12.32 in the grid, which confirms the optimism of the grid averages. Any two of them differ by at most 0.03 nats per stroke, and every difference lies within $\pm0.05$ nats per stroke according to two one-sided tests at the 5\,\% level: the four configurations are equivalent, and the chosen one has the lowest mean.
+The best configurations of the grid differ by less than this variation between seeds: the fifteen best ones have mean validation losses within 0.06 nats per stroke of each other, so their differences are not significant and their ranking is mostly due to chance. Among them, the configuration that takes the best value of every hyperparameter in Table~\ref{tab:hyperparameter_effects} was chosen; it is the second of the ranking, 0.002 nats per stroke from the first, which differs only in the clipping threshold. Since the best average among many noisy averages is optimistic, the chosen configuration was trained again with 100 new seeds to estimate its performance without this bias: its mean validation loss is 12.37 nats per stroke, against 12.28 in the grid, with a standard deviation of 0.06 nats per stroke between the seeds.
 
-The same seeds were used to train the configuration adopted before the search (LSTM width 64, four components, eight recordings per batch, rotation probability 0.75, noise on the previous stroke 0.05). Its mean validation loss is 12.498 nats per stroke: the chosen configuration improves it by 0.131 nats per stroke, with a 95\,\% confidence interval of $[0.112, 0.150]$, and the improvement is significant according to a paired $t$-test with Holm correction ($p<10^{-4}$), as are those of the other three configurations.
+The probabilistic path tube of Section~\ref{sec:path_tube} provides statistical tests at the level of whole movements. They were computed for the trained network with the median validation loss, on the sixteen tasks, at three values of the determinism, with as many generated paths per task as recorded trials (146 to 218); no generated path failed to be rebuilt. The recorded paths, scored leave-one-out, lie inside their whole-path tubes in 94.5--95.0\,\% of the cases, by construction, and keep 91--96\,\% of their points inside the pointwise tube. Table~\ref{tab:path_tube} summarises the results by set of tasks.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Probabilistic path tube of the generated paths, for the network with the median validation loss: mean over the tasks of each set of the fraction of paths inside the whole-path tube and of the fraction of points inside the pointwise tube, and number of tasks in which the generated paths are compatible with the recorded ones, that is, in which the binomial test of the fraction inside the tube or the Kolmogorov--Smirnov test of the scores does not reject at the 5\,\% level after the Holm correction. The recorded paths lie inside their tubes in 94.5--95.0\,\% of the cases.}
+    \label{tab:path_tube}
+    \begin{tabular}{llrrrrr}
+        \toprule
+        $\sym{determinism}$ & Tasks & Paths & Inside tube & Points inside & \multicolumn{2}{c}{Compatible tasks}\\
+        & & & & & binomial & K--S\\
+        \midrule
+        0   & Training   & 1466 & 38.4\,\% & 65.6\,\% & 0/8 & 0/8\\
+            & Validation &  811 & 20.5\,\% & 49.6\,\% & 0/4 & 0/4\\
+            & Test       &  813 & 28.3\,\% & 57.6\,\% & 0/4 & 0/4\\
+        \midrule
+        0.5 & Training   & 1466 & 78.2\,\% & 86.2\,\% & 3/8 & 2/8\\
+            & Validation &  811 & 58.1\,\% & 75.9\,\% & 0/4 & 0/4\\
+            & Test       &  813 & 76.8\,\% & 87.1\,\% & 2/4 & 2/4\\
+        \midrule
+        1   & Training   & 1466 & 100.0\,\% & 90.2\,\% & 0/8 & 0/8\\
+            & Validation &  811 & 100.0\,\% & 90.5\,\% & 0/4 & 0/4\\
+            & Test       &  813 & 100.0\,\% & 99.3\,\% & 0/4 & 0/4\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+With pure sampling, $\sym{determinism}=0$, the generated paths are significantly more variable than the recorded ones in every task (binomial test, $p<0.001$ after the Holm correction): on average only 31\,\% of them lie inside the tube, and as few as 5--7\,\% for the letters, whose three strokes accumulate the errors of free running. Yet half to two thirds of their points lie inside the pointwise tube, so the generated paths leave the tube along a part of the movement rather than everywhere. With $\sym{determinism}=1$ every generated path lies inside the tube, significantly more often than the recorded paths ($p\le0.001$ in every task), and the Kolmogorov--Smirnov test rejects in every task: all the generated paths stay close to the mean path, without the variability of the subjects. At $\sym{determinism}=0.5$ the fraction inside the tube is compatible with that of the recorded paths in five tasks, \texttt{CHECK\_XY}, \texttt{CHECK\_XZ} and \texttt{HOOK\_XY} among the training tasks and \texttt{BURSTc\_XZ} and \texttt{BURSTs\_YZ} among the test tasks; in three of them, \texttt{HOOK\_XY}, \texttt{BURSTc\_XZ} and \texttt{BURSTs\_YZ}, the Kolmogorov--Smirnov test does not reject either, so that the generated paths are statistically indistinguishable from the recorded ones in the tube. The letters, with 32--50\,\% of the paths inside the tube, and the non-planar reversal, with 69\,\%, remain far from the spread of the subjects. The path tube therefore confirms, at the level of whole movements, the compromise found with precision and coverage at intermediate determinism, and shows that the network reaches the spread of the subjects on some tasks it has never seen, while the tasks with more strokes remain the hardest, whether seen in training or not. These tests concern a single trained network: the variability between networks trained with different seeds is not included.
 
 \section{System Evaluation}
 \label{sec:system_evaluation}
@@ -1391,7 +1468,7 @@ The grid of Table~\ref{tab:hyperparameter_grid} contains $2^9\cdot3^2=4608$ conf
     \end{tabular}
 \end{table}
 
-The largest angle of the rotations dominates all the other hyperparameters: on average over the rest of the grid, rotations up to $180^\circ$ lower the validation loss by 1.47 nats per stroke with respect to rotations up to $30^\circ$. With rotations limited to $30^\circ$ the planes of the recordings are kept, and a validation task drawn on a plane never seen in training is effectively a new shape; with rotations in any direction every task is seen in every orientation. All the following analyses use the 2304 configurations with rotations up to $180^\circ$. Table~\ref{tab:hyperparameter_effects} shows the effect of every other hyperparameter, averaged over all the combinations of the rest. The number of components is the most important: two components are better than four, and four better than six. Smaller widths of the LSTM and smaller batches are better, while the wider head is better than the narrower one. The other hyperparameters change the loss by less than 0.03 nats per stroke. The fifteen best configurations have mean validation losses within 0.06 nats per stroke of each other, less than the variation between seeds, and share the values of the most important hyperparameters: two components, an LSTM width of 32, a head width of 64 and rotations up to $180^\circ$ with probability one. One of them was taken, and its values are the best ones of every hyperparameter in Table~\ref{tab:hyperparameter_effects}.
+The largest angle of the rotations dominates all the other hyperparameters: on average over the rest of the grid, rotations up to $180^\circ$ lower the validation loss by 1.47 nats per stroke with respect to rotations up to $30^\circ$. With rotations limited to $30^\circ$ the planes of the recordings are kept, and a validation task drawn on a plane never seen in training is effectively a new shape; with rotations in any direction every task is seen in every orientation. All the following analyses use the 2304 configurations with rotations up to $180^\circ$. Table~\ref{tab:hyperparameter_effects} shows the effect of every other hyperparameter, averaged over all the combinations of the rest. The number of components is the most important: two components are better than four, and four better than six. Smaller widths of the LSTM and smaller batches are better, while the wider head is better than the narrower one. The other hyperparameters change the loss by less than 0.03 nats per stroke. The fifteen best configurations have mean validation losses within 0.06 nats per stroke of each other, less than the variation between seeds, and share the values of the most important hyperparameters: two components, an LSTM width of 32, a head width of 64 and rotations up to $180^\circ$ with probability one. Among them, the one that takes the best value of every hyperparameter in Table~\ref{tab:hyperparameter_effects} was chosen (Section~\ref{sec:statistical_significance}).
 
 \begin{table}[htbp]
     \centering
@@ -1462,12 +1539,12 @@ The chosen network has the layers of Table~\ref{tab:final_network}, for a total 
     \end{tabular}
 \end{table}
 
-The network was trained with 100 seeds. Figure~\ref{fig:loss_band} shows the losses during training: the training loss keeps decreasing, while the validation loss reaches its minimum after a median of 34 epochs (between 21 and 106 depending on the seed) and then slowly rises, as the network starts to fit the training tasks at the expense of the unseen ones; early stopping restores the weights of the minimum. The seeds behave alike, as the narrow bands show. A run lasts about 2.6 minutes on one processor core, with 24 runs in parallel.
+The chosen configuration was trained with 100 new seeds (Section~\ref{sec:statistical_significance}). Figure~\ref{fig:loss_band} shows the losses during training: the training loss keeps decreasing, while the validation loss reaches its minimum after a median of 34 epochs (between 21 and 106 depending on the seed) and then slowly rises, as the network starts to fit the training tasks at the expense of the unseen ones; early stopping restores the weights of the minimum. Every run stops 50 epochs after its minimum, between epoch 71 and 156, so the mean over the seeds is shown only while at least 20 runs are still training: beyond that point it would describe only the longest runs. The seeds behave alike, as the narrow bands show. A run lasts about 2.6 minutes on one processor core, with 24 runs in parallel.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\linewidth]{results/loss_band.pdf}
-    \caption{Training and validation loss of the final network over the first 40 epochs: mean over 100 seeds with a band of one standard deviation, and every run in grey. The dashed line marks the median epoch of the lowest validation loss.}
+    \includegraphics[width=0.9\linewidth]{results/loss_band.pdf}
+    \caption{Training and validation loss of the final network over all the epochs of its 100 runs. Top: mean with a band of one standard deviation, drawn while at least 20 runs are still training, and every run in grey; the dashed line marks the median epoch of the lowest validation loss. Bottom: number of runs still training, since every run stops 50 epochs after its lowest validation loss.}
     \label{fig:loss_band}
 \end{figure}
 
