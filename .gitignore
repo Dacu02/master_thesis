@@ -16,3 +16,7 @@ pdfa*
 *-SAVE-ERROR
 *.puml
 thesis-blx.bib
+
+# Private pages, kept out of the repository
+epigraphs.tex
+acknowledgements.tex

@@ -9,7 +9,6 @@
 \PassOptionsToPackage{hyphens}{url}
 \usepackage{hyperref}
 \usepackage[a-1b]{pdfx}
-\usepackage{cjhebrew}
 \usepackage{graphicx}
 \graphicspath{{images/}}
 
@@ -44,18 +43,13 @@
 \addbibresource{biblio.bib}
 
 \usepackage{titlesec}
-\usepackage{epigraph}
 
 \usepackage{booktabs}
 \usepackage{multirow}
 
-\epigraphnoindent
-\setlength{\epigraphrule}{0.4pt}
-\newcommand{\blankpage}{
-    \newpage
-    \thispagestyle{empty}
-    \mbox{}
-}
+% Epigraph page and acknowledgements live in epigraphs.tex and acknowledgements.tex,
+% which are ignored by git; the thesis compiles also without them.
+\InputIfFileExists{epigraphs.tex}{}{}
 
 \titleformat{\chapter}
 {\normalfont\huge\bfseries}
@@ -209,24 +203,9 @@
 
 \end{titlepage}
 \pagenumbering{gobble}
-\null\vfill
-\epigraph{Then what is your hand for?}{\textit{Rei Ayanami, End of Evangelion}}
-\smallskip
-\epigraph{To effectively contain a civilization's development and disarm it across such a long span of time, there is only one way: kill its science.
-}{\textit{Liu Cixin, The Three-Body Problem}}
-\smallskip
-\epigraph{If one's different, one's bound to be lonely.}{\textit{Aldous Huxley, Brave New World}}
-\smallskip
-\epigraph{The saddest aspect of life right now is that science gathers knowledge faster than society gathers wisdom.}{\textit{Isaac Asimov, Book of Science and Nature Questions}}
-\epigraph{\cjRL{'mt}}{\textit{The Golem of Prague}}
-\smallskip
-\epigraph{The true measure of a man is not his intelligence or how high he rises in this freak establishment. No, the true measure of a man is this: how quickly can he respond to the needs of others and how much of himself he can give.}{\textit{Philip K. Dick, Our Friends}}
-\epigraph{"Well, I don't think there is any question about it. It can only be attributable to human error. This sort of thing has cropped up before, and it has always been due to human error."}{\textit{HAL 9000, 2001: A Space Odyssey}}
-\vfill
-\blankpage
-\chapter*{Acknowledgements}
+% \ifdefined\epigraphpage\epigraphpage\fi
+\clearpage
 \pagenumbering{Roman}
-Write acknowledgements here.
 \tableofcontents
 \listoffigures
 \listoftables
@@ -289,14 +268,13 @@ Write acknowledgements here.
 %==============================================================================
 \chapter{Introduction}
 
-Human motion, while natural and effortless for those who perform it, results from the coordination of the nervous, sensory and musculoskeletal systems, and has long been studied in biomechanics, medicine, neuroscience, robotics and computer science.
+Human motion, is the coordination of the nervous, sensory and musculoskeletal systems, and has long been studied in biomechanics, medicine, neuroscience, robotics and computer science.
 
-In robotics, it is particularly relevant to human--robot interaction, where collaborative robots share their workspace with humans. Humans are used to cooperating with other humans, and they read the movements of a partner through their own motor repertoire~\cite{bisio2014}. Robot motion that follows the kinematics of human movement has been shown to shorten the reaction times of human partners~\cite{huber2008}, to reduce the forces they apply during physical interaction~\cite{maurice2018} and to be perceived as more comfortable~\cite{coccaro}. A robot that moves like a human is therefore more predictable, and a predictable robot is easier to work with and more likely to be accepted, both on production lines and in everyday environments.
+In robotics, it is particularly relevant to human--robot interaction, where collaborative robots share their workspace with humans. Humans can easily cooperate with other humans through their own motor repertoire~\cite{bisio2014}. Robot motion that follows the kinematics of human movement has been shown to shorten the reaction times of human partners~\cite{huber2008}, to reduce the forces they apply during physical interaction~\cite{maurice2018} and to be perceived as more comfortable~\cite{coccaro}. A robot that moves like a human is therefore more predictable, and a predictable robot is easier to work with and more likely to be accepted~\cite{humanlikemotion,kupferberg2011}, both on production lines and in everyday environments.
 
-Predictability, however, is only part of the problem. Humans also reveal their intentions through their movements: the trajectory and velocity of a reaching hand indicate which object is about to be grasped. Making robot motion intent-expressive, or legible, is a related but distinct goal, since legible and predictable motion can contradict each other~\cite{dragan2013}. This work focuses on predictability, achieved through human-like motion, and leaves legibility to future developments.
+Humans also reveal their intentions through their movements~\cite{becchio2012grasping}: the trajectory, velocity and shape of a reaching hand can indicate which object is about to be grasped~\cite{ambrosini2011grasping,perezdarpino2015}. Making robot motion intent-expressive, or legible, is a related but distinct goal, since legible and predictable motion can contradict each other~\cite{dragan2013}. This work focuses on predictability, achieved through human-like motion, and leaves legibility to future developments.
 
-Beyond human--robot interaction, models of human motion support the design of haptic interfaces, rehabilitation and assistive robots, and prosthetic devices, all of which benefit from a faithful description of how humans move.
-
+Beyond human--robot interaction, models of human motion support the design of haptic interfaces~\cite{bluteau2008}, rehabilitation~\cite{rohrer2002} and assistive robots~\cite{losey2018}, and prosthetic devices~\cite{merad2018}, all of which benefit from a faithful description of how humans move~\cite{burdet2013}.
 This work has its roots in neuroscience, and adopts as its theoretical foundation the Kinematic Theory of rapid human movements~\cite{plamondon1995a,plamondon1995b}, in which a movement is described as the superimposition of elementary strokes, each with a lognormal velocity profile. The theory has been applied mostly to planar handwriting and signatures; showing that it can describe, and generate, movements in three-dimensional space extends its scope and may support future research on human motor control.
 
 Human movements were recorded through an experimental campaign in which subjects moved the stylus of a haptic device through sequences of target points, called waypoints. The sequences were first learned with the help of the device and then executed from memory, so that the recordings capture well-practised movements rather than visually aided ones. The velocity profile of each recording was decomposed into lognormal strokes, and the path of each stroke was described by a cubic Bézier segment, so that consecutive strokes form a continuous trajectory. Since the stroke parameters are related to each other and to the task, drawing them at random, or by their average values, would not produce human-like movements: a generative model was therefore trained on the extracted parameters to learn their distribution, conditioned on the target points, and to produce new movements from the same elementary units.
@@ -1838,4 +1816,6 @@ Please take the stylus out of its housing and hold it as you would hold a pen or
 \end{protocol}
 
 \printnoidxglossary[type=symbols, style=symboltable, sort=def, title={List of Symbols}]
+
+\InputIfFileExists{acknowledgements.tex}{}{}
 \end{document}
