@@ -25,6 +25,7 @@
 \usepackage[british]{babel}
 \usepackage{tikz}
 \usepackage[skip=6pt]{caption}
+\usepackage{subcaption}
 \usetikzlibrary{positioning, shapes.geometric, arrows.meta, calc, decorations.pathreplacing, arrows.meta}
 
 \usepackage{mathptmx}
@@ -220,6 +221,7 @@
 \epigraph{\cjRL{'mt}}{\textit{The Golem of Prague}}
 \smallskip
 \epigraph{The true measure of a man is not his intelligence or how high he rises in this freak establishment. No, the true measure of a man is this: how quickly can he respond to the needs of others and how much of himself he can give.}{\textit{Philip K. Dick, Our Friends}}
+\epigraph{"Well, I don't think there is any question about it. It can only be attributable to human error. This sort of thing has cropped up before, and it has always been due to human error."}{\textit{HAL 9000, 2001: A Space Odyssey}}
 \vfill
 \blankpage
 \chapter*{Acknowledgements}
@@ -580,7 +582,7 @@ Problem~\eqref{eq:lognormal_fit} is poorly conditioned, because the speed profil
 \end{equation}
 and the members of this family differ only in their skewness. For small $\sym{sigma}$, $\sym{tzero}\simeq\sym{tpeak}_k-\sqrt{\sym{tvar}_k}/\sym{sigma}$ and $\sym{mu}\simeq\tfrac12\ln\sym{tvar}_k-\ln\sym{sigma}$, so that $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}_k}/\sym{sigma}^2$ and $d\sym{mu}/d\sym{sigma}\simeq-1/\sym{sigma}$: a small error on the skewness becomes a large and correlated error on the onset and on the log-time delay. For a stroke with $\sqrt{\sym{tvar}_k}=30$~ms, moving $\sym{sigma}$ from 0.20 to 0.25 delays the onset by about 32~ms and lowers $\sym{mu}$ by about 0.24, while the peak and the width of the bell do not change. As $\sym{sigma}\to0$, the onset goes to $-\infty$, $\sym{mu}$ goes to $+\infty$ and the lognormal tends to a Gaussian: in statistics, the Gaussian is an embedded model of the three-parameter lognormal, a limiting case reached only when two parameters diverge, which makes the estimation ill-conditioned unless the model is reparameterised~\cite{cheng1992embedded}.
 
-The skewness that tells the members of the family apart lies mostly in the flanks of the bell. The two inflection points of the profile are almost symmetric about the peak, the ratio between their distances from it being $1+\sym{sigma}^3/12$ to leading order, whereas their heights differ already at first order: the logarithm of the ratio between the speed at the later and at the earlier inflection point is $\sym{sigma}\sqrt{1+\sym{sigma}^2/4}$. The information on $\sym{sigma}_k$ therefore comes from the heights of the flanks, which is where consecutive strokes overlap and where Equation~\eqref{eq:residual_update} subtracts the tails of the previous strokes: an error in those tails moves $\sym{sigma}_k$ and, through Equation~\eqref{eq:lognormal_family}, also $\sym{tzero}_k$ and $\sym{mu}_k$.
+The skewness that tells the members of the family apart lies mostly in the flanks of the bell. The two inflection points of the profile are almost symmetric about the peak, the ratio between their distances from it being $1+\sym{sigma}^3/12$ to leading order, whereas their heights differ already at first order: the logarithm of the ratio between the speed at the later and at the earlier inflection point is $\sym{sigma}\sqrt{1+\sym{sigma}^2/4}$ (Appendix~\ref{app:lognormal_identifiability}). The information on $\sym{sigma}_k$ therefore comes from the heights of the flanks, which is where consecutive strokes overlap and where Equation~\eqref{eq:residual_update} subtracts the tails of the previous strokes: an error in those tails moves $\sym{sigma}_k$ and, through Equation~\eqref{eq:lognormal_family}, also $\sym{tzero}_k$ and $\sym{mu}_k$.
 
 Only the strokes that carry the movement are kept. The peak speed of a stroke, found at peak time $\sym{tzero}_k+e^{\sym{mu}_k-\sym{sigma}_k^2}$
 \begin{equation}
@@ -1058,7 +1060,7 @@ A path of two waypoints is simply a straight line between the two. On the other 
 The issue with such a representation is that it doesn't provide any information about the curvature of the path, neither about the depth of the waypoints in the space (Section~\ref{sec:path_description}).
 
 \subsection{Path Taxonomy}
-The sixteen tasks that meet the requirements on difficulty and segmentation are grouped by their number of strokes into three families, listed in Table~\ref{tab:tasks}. In the frame of the device the $Y$ axis is vertical, so the $XY$ plane is parallel to the frontal plane of the subject, the $XZ$ plane to the horizontal plane of the table and the $YZ$ plane to the sagittal plane. The name of a task gives its shape and, as a suffix, its plane.
+The sixteen tasks that meet the requirements on difficulty and segmentation are grouped by their number of strokes into three families, listed in Table~\ref{tab:tasks}; the coordinates of their waypoints are given in Appendix~\ref{app:task_coordinates}. In the frame of the device the $Y$ axis is vertical, so the $XY$ plane is parallel to the frontal plane of the subject, the $XZ$ plane to the horizontal plane of the table and the $YZ$ plane to the sagittal plane. The name of a task gives its shape and, as a suffix, its plane.
 
 Paths of constant or slowly varying curvature, such as circles, ellipses, spirals and helices, are not included, since they do not induce a speed minimum at their waypoints; neither are cursive letters, whose strokes do not end at well-defined corners. The last column of the table assigns every task to the training, validation or test set of the generative model (Section~\ref{sec:data_split}).
 
@@ -1095,10 +1097,19 @@ Paths of constant or slowly varying curvature, such as circles, ellipses, spiral
 \paragraph{Single stroke}
 Single-stroke tasks represent smooth, straight movements. They are easy, so they let the subjects start the campaign while getting used to the device, and they provide movements in which exactly one stroke is expected.
 
-Three such tasks (\texttt{BURSTs}) join two waypoints along a diagonal of a plane: the horizontal plane, as when writing on a table, the frontal plane, as when writing in the air, and the sagittal plane, which is parallel to neither of the two and imitates bringing the hand towards the body.
+Three such tasks (\texttt{BURSTs}, Figure~\ref{fig:tasks_single}) join two waypoints along a diagonal of a plane: the horizontal plane, as when writing on a table, the frontal plane, as when writing in the air, and the sagittal plane, which is parallel to neither of the two and imitates bringing the hand towards the body.
+
+\begin{figure}[htbp]
+    \centering
+    \subcaptionbox{\texttt{BURSTs\_XY}}{\includegraphics[width=0.31\linewidth]{paths/BURSTs_XY.pdf}}\hfill
+    \subcaptionbox{\texttt{BURSTs\_XZ}}{\includegraphics[width=0.31\linewidth]{paths/BURSTs_XZ.pdf}}\hfill
+    \subcaptionbox{\texttt{BURSTs\_YZ}}{\includegraphics[width=0.31\linewidth]{paths/BURSTs_YZ.pdf}}
+    \caption{Single-stroke tasks. Every panel shows the waypoints of a task in the frame of the device, in millimetres, with the same limits on every axis in all the tasks, so that their sizes can be compared; the $Y$ axis is vertical. The waypoints are numbered in the order in which they are reached, and their colour goes from red for the first through black to blue for the last; circles mark the first and the last waypoint, diamonds the inner ones. Consecutive waypoints are joined by straight segments that show only their order, not the expected path of the hand. The lighter lines and markers are the projections of the task on the three back planes of the box.}
+    \label{fig:tasks_single}
+\end{figure}
 
 \paragraph{Two strokes}
-Two-stroke tasks have three waypoints, and the direction of motion changes at the middle one. The angle between the two segments at the middle waypoint sets how sharp the turn is, and therefore how marked the speed minimum between the two strokes is expected to be:
+Two-stroke tasks (Figure~\ref{fig:tasks_two}) have three waypoints, and the direction of motion changes at the middle one. The angle between the two segments at the middle waypoint sets how sharp the turn is, and therefore how marked the speed minimum between the two strokes is expected to be:
 \begin{itemize}
     \item \texttt{BURSTc}, a curved burst with an angle of about $41^\circ$, on each of the three planes;
     \item \texttt{CHECK}, an asymmetric check mark with an angle of about $71^\circ$, on the frontal and horizontal planes;
@@ -1107,8 +1118,37 @@ Two-stroke tasks have three waypoints, and the direction of motion changes at th
     \item \texttt{REVERSAL\_3D}, a reversal with an angle of about $33^\circ$ whose waypoints do not lie on any plane of the device frame, the only "non-planar" task.
 \end{itemize}
 
+\begin{figure}[htbp]
+    \centering
+    \subcaptionbox{\texttt{BURSTc\_XY}}{\includegraphics[width=0.31\linewidth]{paths/BURSTc_XY.pdf}}\hfill
+    \subcaptionbox{\texttt{BURSTc\_XZ}}{\includegraphics[width=0.31\linewidth]{paths/BURSTc_XZ.pdf}}\hfill
+    \subcaptionbox{\texttt{BURSTc\_YZ}}{\includegraphics[width=0.31\linewidth]{paths/BURSTc_YZ.pdf}}
+
+    \medskip
+    \subcaptionbox{\texttt{CHECK\_XY}}{\includegraphics[width=0.31\linewidth]{paths/CHECK_XY.pdf}}\hfill
+    \subcaptionbox{\texttt{CHECK\_XZ}}{\includegraphics[width=0.31\linewidth]{paths/CHECK_XZ.pdf}}\hfill
+    \subcaptionbox{\texttt{HOOK\_XY}}{\includegraphics[width=0.31\linewidth]{paths/HOOK_XY.pdf}}
+
+    \medskip
+    \subcaptionbox{\texttt{HOOK\_YZ}}{\includegraphics[width=0.31\linewidth]{paths/HOOK_YZ.pdf}}\hfill
+    \subcaptionbox{\texttt{REVERSAL\_Z}}{\includegraphics[width=0.31\linewidth]{paths/REVERSAL_Z.pdf}}\hfill
+    \subcaptionbox{\texttt{REVERSAL\_3D}}{\includegraphics[width=0.31\linewidth]{paths/REVERSAL_3D.pdf}}
+    \caption{Two-stroke tasks, in the order of Table~\ref{tab:tasks} and with the notation of Figure~\ref{fig:tasks_single}.}
+    \label{fig:tasks_two}
+\end{figure}
+
 \paragraph{Letters}
-Letter tasks have four waypoints, three strokes and two turns of about $45^\circ$, and lie on the frontal plane: the uppercase \texttt{N}, \texttt{S} and \texttt{Z} and the nabla ($\nabla$). Their waypoints are the corners of an angular version of each letter, so that every stroke is one of its straight segments, and their semantic content is expected to make them easier to memorise than paths of the same complexity without meaning.
+Letter tasks (Figure~\ref{fig:tasks_letters}) have four waypoints, three strokes and two turns of about $45^\circ$, and lie on the frontal plane: the uppercase \texttt{N}, \texttt{S} and \texttt{Z} and the nabla ($\nabla$). Their waypoints are the corners of an angular version of each letter, so that every stroke is one of its straight segments, and their semantic content is expected to make them easier to memorise than paths of the same complexity without meaning.
+
+\begin{figure}[htbp]
+    \centering
+    \subcaptionbox{\texttt{LETTER\_N}}{\includegraphics[width=0.24\linewidth]{paths/LETTER_N.pdf}}\hfill
+    \subcaptionbox{\texttt{LETTER\_S}}{\includegraphics[width=0.24\linewidth]{paths/LETTER_S.pdf}}\hfill
+    \subcaptionbox{\texttt{LETTER\_Z}}{\includegraphics[width=0.24\linewidth]{paths/LETTER_Z.pdf}}\hfill
+    \subcaptionbox{\texttt{LETTER\_NABLA}}{\includegraphics[width=0.24\linewidth]{paths/LETTER_NABLA.pdf}}
+    \caption{Letter tasks, with the notation of Figure~\ref{fig:tasks_single}.}
+    \label{fig:tasks_letters}
+\end{figure}
 
 \section{Experimental Protocol}
 The real challenge is to design the experiments in such a way that there isn't difference between the information received by the subjects during the experiment and the one received by the generative model during its training phase. At the same time, since some requirements are not explainable, such as keeping momentum and not correct movements with micro strokes, these have to be learned from the data distribution.
@@ -1212,24 +1252,10 @@ Before a recording the subject is taken to the first waypoint and has to stay in
 \end{table}
 
 \subsection{Written Protocol}
-Providing the user with a written protocol is mandatory not only to ensure that all the user have the same information, but also to ensure that they have the same understanding of the task. From the different equivalent sequences of words available to explain an instruction, the most intuitive should be chosen, to avoid any bias in the collected data. 
+\label{sec:written_protocol}
+Providing the user with a written protocol is mandatory not only to ensure that all the user have the same information, but also to ensure that they have the same understanding of the task. From the different equivalent sequences of words available to explain an instruction, the most intuitive should be chosen, to avoid any bias in the collected data. Its full text is reported in Appendix~\ref{app:protocol}.
 \subparagraph{Input} In each experiment of a session a path is shown to the user, whose goal is to traverse it close to the waypoints in a single swift, continuous motion, without stopping before the last one, with the understanding that it is not strictly necessary to cross the centre of every waypoint, but rather to think of the waypoints as attractors. The user is first pre-trained with the aid of the visual feedback and of the haptic guidance (Section~\ref{sec:guidance}), until they feel confident. Then they are asked to execute the path without any aid, while the system collects their movements.
 \subparagraph{Result} For each execution of a path, the system collects a sequence of timestamped points in the space, which are expressed in Cartesian coordinates with respect to the reference frame. Furthermore, the tangential velocity of the user's hand is computed at each timestamp. By interpolating these points, and by having a high sampling frequency, it is possible to reconstruct the trajectory of the user's movements with better accuracy. Other information like the user's hand orientation and the angular twist velocity are collected as well, but they are not needed for the generative model, since they are not used to generate new movements. They are collected to provide a more complete representation of the user's movements, and to eventually allow for a more detailed analysis of the data.
-
-\begin{protocol}
-Welcome. Which is your dominant hand? (The device is placed on the side of the dominant hand.)
-
-The device at your (left/right) side is a haptic device, connected to the screen in front of you, which shows a virtual environment. On the screen you can see the effect of moving the device: the three axes move and rotate with the stylus.
-
-Please take the stylus out of its housing and hold it as you would hold a pen or a precision tool. Move it freely to explore the environment, understand the limits and the depth.
-
-(Once the subject feels at ease interacting with the device.) The screen shows some coloured spheres. The order in which you have to go through them is given by their colour, from warm to cool. To learn the path, the device will guide your hand: it will pull you towards each sphere in turn, hold you there for a moment, and then pull you towards the next one. Let it guide you and try to remember where the spheres are. The guidance will be repeated as many times as you need.
-
-(During the training the experimenter may lower the guidance force; at the lowest level the device no longer stops on the spheres.)
-
-(When the subject feels confident repeating the task.) Now the screen will be hidden. Before every repetition the device will take your hand to the first sphere: hold still there. When the light of the device switches off, go through all the other spheres, in order, with a single swift and continuous movement, without stopping before the last one. You do not need to pass exactly through the centre of each sphere. If you feel that you have gone off track, do not correct the movement: the repetition will be discarded and executed again.
-\end{protocol}
-
 
 Those are the same inputs and outputs of the generative model, with the exception that it won't know the policies, but rather understand them from the data.
 
@@ -1670,5 +1696,146 @@ Achieving these results with sources of bias not fully removed and with a networ
 % Appendix
 %==============================================================================
 \appendix
+\chapter{Identifiability of the Lognormal \mbox{Parameters}}
+\label{app:lognormal_identifiability}
+This appendix derives the results on the lognormal speed profile used in Section~\ref{sec:data_processing_system}: the family of profiles with the same peak and the same width, its behaviour for small log-response times, and the position and the height of the inflection points. Throughout, $\sym{logtime}=\ln(t-\sym{tzero})$: when $t$ is distributed according to $\sym{lognormal}(t;\sym{tzero},\sym{mu},\sym{sigma}^2)$, $\sym{logtime}$ is normally distributed with mean $\sym{mu}$ and variance $\sym{sigma}^2$.
+
+\paragraph{Moments}
+Seen as a density over time, the lognormal has its mode at $\sym{tpeak}=\sym{tzero}+e^{\sym{mu}-\sym{sigma}^2}$, mean $\sym{tzero}+e^{\sym{mu}+\sym{sigma}^2/2}$, variance $\sym{tvar}=e^{2\sym{mu}+\sym{sigma}^2}\big(e^{\sym{sigma}^2}-1\big)$ and skewness $\big(e^{\sym{sigma}^2}+2\big)\sqrt{e^{\sym{sigma}^2}-1}=3\sym{sigma}+O(\sym{sigma}^3)$.
+
+\paragraph{Family of equivalent profiles}
+Solving the expression of $\sym{tvar}$ for $\sym{mu}$, and that of $\sym{tpeak}$ for $\sym{tzero}$, gives Equation~\eqref{eq:lognormal_family}: for given $\sym{tpeak}$ and $\sym{tvar}$, every $\sym{sigma}>0$ defines a profile with that mode and that variance. Since $e^{\sym{sigma}^2}-1=\sym{sigma}^2\big(1+\sym{sigma}^2/2+O(\sym{sigma}^4)\big)$, for small $\sym{sigma}$
+\begin{equation}
+    \sym{mu}=\tfrac12\ln\sym{tvar}-\ln\sym{sigma}-\tfrac34\sym{sigma}^2+O(\sym{sigma}^4),\qquad
+    \sym{tzero}=\sym{tpeak}-\sqrt{\sym{tvar}}\left(\frac{1}{\sym{sigma}}-\frac{7}{4}\sym{sigma}+O(\sym{sigma}^3)\right),
+\end{equation}
+whose leading terms give the sensitivities $d\sym{mu}/d\sym{sigma}\simeq-1/\sym{sigma}$ and $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}}/\sym{sigma}^2$ of Section~\ref{sec:data_processing_system}. As $\sym{sigma}\to0$, the onset goes to $-\infty$ and $\sym{mu}$ to $+\infty$, while the profile tends to a Gaussian with mean $\sym{tpeak}$ and variance $\sym{tvar}$. Indeed, $\sym{logtime}$ has standard deviation $\sym{sigma}$, so to first order in $\sym{sigma}$ the time $t-\sym{tzero}=e^{\sym{logtime}}$ is normal with mean $e^{\sym{mu}}$ and standard deviation $\sym{sigma}e^{\sym{mu}}$; along the family, $\sym{sigma}e^{\sym{mu}}=\sqrt{\sym{tvar}}+O(\sym{sigma}^2)$ and $\sym{tzero}+e^{\sym{mu}}=\sym{tpeak}+O(\sym{sigma})$.
+
+\paragraph{Inflection points}
+Since $\ln\sym{lognormal}=-\sym{logtime}-(\sym{logtime}-\sym{mu})^2/(2\sym{sigma}^2)+\text{const}$ and $d\sym{logtime}/dt=e^{-\sym{logtime}}$, the logarithmic derivative of the profile is
+\begin{equation}
+    \frac{d\ln\sym{lognormal}}{dt}=-e^{-\sym{logtime}}\,a,\qquad a=1+\frac{\sym{logtime}-\sym{mu}}{\sym{sigma}^2},
+\end{equation}
+which vanishes at the peak, where $\sym{logtime}=\sym{mu}-\sym{sigma}^2$. The profile has an inflection point where $\sym{lognormal}''/\sym{lognormal}=(\ln\sym{lognormal})''+\big((\ln\sym{lognormal})'\big)^2=e^{-2\sym{logtime}}\big(a^2+a-1/\sym{sigma}^2\big)$ vanishes. The two roots of $a^2+a-1/\sym{sigma}^2=0$ place the inflection points after ($+$) and before ($-$) the peak at
+\begin{equation}
+    \Delta\sym{logtime}_\pm=\sym{logtime}_\pm-\left(\sym{mu}-\sym{sigma}^2\right)=-\frac{\sym{sigma}^2}{2}\pm\sym{sigma}\sqrt{1+\frac{\sym{sigma}^2}{4}}.
+\end{equation}
+Substituting into $\ln\sym{lognormal}$, their heights relative to the peak are
+\begin{equation}
+    \frac{\sym{lognormal}(t_\pm)}{\sym{lognormal}(\sym{tpeak})}=\exp\left(-\frac{\Delta\sym{logtime}_\pm^2}{2\sym{sigma}^2}\right)=e^{-1/2}\left(1\pm\frac{\sym{sigma}}{2}+O(\sym{sigma}^2)\right),
+\end{equation}
+so both flanks lie at about 61\,\% of the peak, and the logarithm of the ratio between the later and the earlier height is, exactly,
+\begin{equation}
+    \ln\frac{\sym{lognormal}(t_+)}{\sym{lognormal}(t_-)}=\frac{\Delta\sym{logtime}_-^2-\Delta\sym{logtime}_+^2}{2\sym{sigma}^2}=\sym{sigma}\sqrt{1+\frac{\sym{sigma}^2}{4}}.
+\end{equation}
+The distances of the inflection points from the peak are $e^{\sym{mu}-\sym{sigma}^2}\big(e^{\Delta\sym{logtime}_+}-1\big)$ and $e^{\sym{mu}-\sym{sigma}^2}\big(1-e^{\Delta\sym{logtime}_-}\big)$, and their ratio is
+\begin{equation}
+    \frac{e^{\Delta\sym{logtime}_+}-1}{1-e^{\Delta\sym{logtime}_-}}=1+\frac{\sym{sigma}^3}{12}+O(\sym{sigma}^5).
+\end{equation}
+
+\paragraph{Consequence}
+The times of the inflection points are almost symmetric about the peak, the difference between their distances from it being below 0.3\,\% for $\sym{sigma}\le0.3$, whereas their heights differ already at first order in $\sym{sigma}$. The information on $\sym{sigma}$ is therefore carried by the heights of the flanks. If $\sym{sigma}$ were read from the ratio of the two heights alone, a spurious contribution of 3\,\% of the peak speed on one flank, about 5\,\% of the speed there, would change it by about 0.05. In the fit of Problem~\eqref{eq:lognormal_fit} the effect is spread over all the samples of the window, but it acts on the same part of the profile, where consecutive strokes overlap.
+
+\chapter{Waypoints of the Tasks}
+\label{app:task_coordinates}
+Table~\ref{tab:task_coordinates} lists the waypoints of the sixteen tasks of Table~\ref{tab:tasks}, in the order in which they are reached, in the frame of the device and in millimetres, with the $Y$ axis vertical. They are the waypoints shown in Figures~\ref{fig:tasks_single}, \ref{fig:tasks_two} and~\ref{fig:tasks_letters}, and the angles of Table~\ref{tab:tasks} follow from them.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Waypoints of the tasks in the frame of the device, in millimetres.}
+    \label{tab:task_coordinates}
+    \footnotesize
+    \begin{tabular}{lcrrr}
+        \toprule
+        Task & Waypoint & $X$ & $Y$ & $Z$\\
+        \midrule
+        \texttt{BURSTs\_XY} & 1 & $-51.00$ & $-51.00$ & $0.00$\\
+         & 2 & $51.00$ & $51.00$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{BURSTs\_XZ} & 1 & $-39.00$ & $0.00$ & $-39.00$\\
+         & 2 & $39.00$ & $0.00$ & $39.00$\\
+        \addlinespace[3pt]
+        \texttt{BURSTs\_YZ} & 1 & $0.00$ & $-49.20$ & $-49.20$\\
+         & 2 & $0.00$ & $49.20$ & $49.20$\\
+        \midrule
+        \texttt{BURSTc\_XY} & 1 & $-68.00$ & $-51.00$ & $0.00$\\
+         & 2 & $68.00$ & $0.00$ & $0.00$\\
+         & 3 & $-68.00$ & $51.00$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{BURSTc\_XZ} & 1 & $-39.00$ & $0.00$ & $-52.00$\\
+         & 2 & $0.00$ & $0.00$ & $52.00$\\
+         & 3 & $39.00$ & $0.00$ & $-52.00$\\
+        \addlinespace[3pt]
+        \texttt{BURSTc\_YZ} & 1 & $0.00$ & $-65.00$ & $-48.75$\\
+         & 2 & $0.00$ & $65.00$ & $0.00$\\
+         & 3 & $0.00$ & $-65.00$ & $48.75$\\
+        \addlinespace[3pt]
+        \texttt{CHECK\_XY} & 1 & $-63.75$ & $0.00$ & $0.00$\\
+         & 2 & $-21.25$ & $-59.50$ & $0.00$\\
+         & 3 & $63.75$ & $59.50$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{CHECK\_XZ} & 1 & $-48.75$ & $0.00$ & $0.00$\\
+         & 2 & $-16.25$ & $0.00$ & $-45.50$\\
+         & 3 & $48.75$ & $0.00$ & $45.50$\\
+        \addlinespace[3pt]
+        \texttt{HOOK\_XY} & 1 & $-38.25$ & $59.50$ & $0.00$\\
+         & 2 & $-38.25$ & $-59.50$ & $0.00$\\
+         & 3 & $38.25$ & $-34.00$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{HOOK\_YZ} & 1 & $0.00$ & $-36.90$ & $57.40$\\
+         & 2 & $0.00$ & $-36.90$ & $-57.40$\\
+         & 3 & $0.00$ & $36.90$ & $-32.80$\\
+        \addlinespace[3pt]
+        \texttt{REVERSAL\_Z} & 1 & $-3.25$ & $0.00$ & $-45.50$\\
+         & 2 & $-3.25$ & $0.00$ & $45.50$\\
+         & 3 & $3.25$ & $0.00$ & $-45.50$\\
+        \addlinespace[3pt]
+        \texttt{REVERSAL\_3D} & 1 & $-75.83$ & $-65.00$ & $-43.33$\\
+         & 2 & $75.83$ & $65.00$ & $43.33$\\
+         & 3 & $-54.17$ & $54.17$ & $-32.50$\\
+        \midrule
+        \texttt{LETTER\_N} & 1 & $-65.00$ & $-65.00$ & $0.00$\\
+         & 2 & $-65.00$ & $65.00$ & $0.00$\\
+         & 3 & $65.00$ & $-65.00$ & $0.00$\\
+         & 4 & $65.00$ & $65.00$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{LETTER\_S} & 1 & $-65.00$ & $-65.00$ & $0.00$\\
+         & 2 & $65.00$ & $-65.00$ & $0.00$\\
+         & 3 & $-65.00$ & $65.00$ & $0.00$\\
+         & 4 & $65.00$ & $65.00$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{LETTER\_Z} & 1 & $-65.00$ & $65.00$ & $0.00$\\
+         & 2 & $65.00$ & $65.00$ & $0.00$\\
+         & 3 & $-65.00$ & $-65.00$ & $0.00$\\
+         & 4 & $65.00$ & $-65.00$ & $0.00$\\
+        \addlinespace[3pt]
+        \texttt{LETTER\_NABLA} & 1 & $-65.00$ & $-65.00$ & $0.00$\\
+         & 2 & $65.00$ & $65.00$ & $0.00$\\
+         & 3 & $-65.00$ & $65.00$ & $0.00$\\
+         & 4 & $65.00$ & $-65.00$ & $0.00$\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\chapter{Text of the Written Protocol}
+\label{app:protocol}
+This appendix reports the text of the written protocol introduced in Section~\ref{sec:written_protocol}. The parts in parentheses are notes for the experimenter.
+
+\medskip
+
+\begin{protocol}
+Welcome. Which is your dominant hand? (The device is placed on the side of the dominant hand.)
+
+The device at your (left/right) side is a haptic device, connected to the screen in front of you, which shows a virtual environment. On the screen you can see the effect of moving the device: the three axes move and rotate with the stylus.
+
+Please take the stylus out of its housing and hold it as you would hold a pen or a precision tool. Move it freely to explore the environment, understand the limits and the depth.
+
+(Once the subject feels at ease interacting with the device.) The screen shows some coloured spheres. The order in which you have to go through them is given by their colour, from warm to cool. To learn the path, the device will guide your hand: it will pull you towards each sphere in turn, hold you there for a moment, and then pull you towards the next one. Let it guide you and try to remember where the spheres are. The guidance will be repeated as many times as you need.
+
+(During the training the experimenter may lower the guidance force; at the lowest level the device no longer stops on the spheres.)
+
+(When the subject feels confident repeating the task.) Now the screen will be hidden. Before every repetition the device will take your hand to the first sphere: hold still there. When the light of the device switches off, go through all the other spheres, in order, with a single swift and continuous movement, without stopping before the last one. You do not need to pass exactly through the centre of each sphere. If you feel that you have gone off track, do not correct the movement: the repetition will be discarded and executed again.
+\end{protocol}
+
 \printnoidxglossary[type=symbols, style=symboltable, sort=def, title={List of Symbols}]
 \end{document}

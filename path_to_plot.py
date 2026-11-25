@@ -4,16 +4,71 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  (registra il proiettore '3d')
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.ticker import FixedLocator, FuncFormatter
 import os
 
 INPUT_YAML    = os.path.join(os.getcwd(), 'paths.yaml')
 OUTPUT_FOLDER = os.path.join(os.getcwd(), 'images', 'paths')
+
+# ------------------------------------------------------------
+# Impostazioni per la stampa nella tesi
+# ------------------------------------------------------------
+# Le figure sono pensate per essere incluse a circa un terzo della larghezza
+# del testo (0.31\linewidth, circa 5 cm) senza essere ridotte: la figura ha
+# gia' le dimensioni finali e i caratteri la loro dimensione finale in punti.
+FIG_SIZE_IN   = 2.3                 # lato della figura in pollici, prima del ritaglio
+FONT_SIZE_PT  = 8                   # etichette degli assi
+TICK_SIZE_PT  = 7                   # numeri sulle tacche
+LABEL_SIZE_PT = 7                   # numeri dei waypoint
+SHOW_TITLE    = False               # il nome del task va nella sotto-didascalia LaTeX
+AXIS_TICKS_M  = (-0.1, 0.0, 0.1)    # tacche in metri, mostrate in millimetri
+BOX_ZOOM      = 1.0                 # ingrandimento del cubo nella figura
+SAVE_FORMATS  = ('pdf', 'png')      # PDF vettoriale per la tesi, PNG per l'anteprima
+MAIN_LINEWIDTH   = 1.3
+SHADOW_LINEWIDTH = 0.8
+TICK_PAD  = 0                       # distanza tra tacche ed etichette (punti); se negativa
+                                    # matplotlib non disegna il nome dell'asse verticale
+LABEL_PAD = -3                      # distanza tra asse e nome dell'asse (punti)
+AXES_RECT = (0.0, 0.06, 0.86, 0.94) # posizione degli assi nella figura (frazioni)
+
+# Niente trasparenze: la tesi e' compilata in PDF/A-1b (pdfx a-1b), che non
+# ammette trasparenze. Le ombre sono quindi colori mescolati con il colore
+# delle pareti, che a vista equivalgono a un'opacita' SHADOW_KEEP.
+SHADOW_KEEP = 0.35
+PANE_COLOR  = (0.95, 0.95, 0.95, 1.0)
+GRID_COLOR  = '#d0d0d0'
+
+plt.rcParams.update({
+    'font.family': 'serif',
+    'font.serif': ['Times New Roman', 'STIXGeneral', 'DejaVu Serif'],
+    'mathtext.fontset': 'stix',
+    'font.size': FONT_SIZE_PT,
+    'axes.linewidth': 0.6,
+    'grid.color': GRID_COLOR,
+    'grid.linewidth': 0.4,
+    'grid.linestyle': '-',
+    'pdf.fonttype': 42,             # font TrueType incorporati, non Type 3
+})
+
 # ============================================================
 # Utils
 # ============================================================
 Path = list[tuple[float, float, float]]
-_ANC   = dict(marker='o', s=90, zorder=6, edgecolors='black', linewidths=0.8)
-_HDL   = dict(marker='D', s=55, zorder=5, edgecolors='gray',  linewidths=0.7)
+_ANC   = dict(marker='o', s=20, zorder=6, edgecolors='black', linewidths=0.5, depthshade=False)
+_HDL   = dict(marker='D', s=13, zorder=5, edgecolors='gray',  linewidths=0.4, depthshade=False)
+
+
+def lighten(colors: np.ndarray, keep: float) -> np.ndarray:
+    """Mescola i colori RGBA con il colore delle pareti, mantenendo una
+    frazione `keep` del colore originale, e li rende opachi. Sostituisce
+    l'alpha, che il PDF/A-1b non ammette."""
+    c = np.array(colors, dtype=float, copy=True)
+    c[..., :3] = keep * c[..., :3] + (1.0 - keep) * np.asarray(PANE_COLOR[:3])
+    c[..., 3] = 1.0
+    return c
+
+
+_MM = FuncFormatter(lambda v, _: f'{v * 1000:.0f}'.replace('-', '−'))
 
 # Limiti degli assi: per ciascun asse si prendono minimo e massimo assoluti
 # su TUTTI i waypoint di TUTTI i path letti da INPUT_YAML (vedi
@@ -106,8 +161,8 @@ def draw_ctrl_numbered_3d(ax, arr: np.ndarray, colors: np.ndarray,
     for i, (x, y, z) in enumerate(arr, start=1):
         ax.text(
             x + offset[0], y + offset[1], z + offset[2], str(i),
-            fontsize=9, fontweight='bold', color='black',
-            bbox=dict(boxstyle='circle,pad=0.15', fc='white', ec='none', alpha=0.8),
+            fontsize=LABEL_SIZE_PT, fontweight='bold', color='black',
+            bbox=dict(boxstyle='circle,pad=0.1', fc='white', ec='none'),
             zorder=10,
         )
 
@@ -116,8 +171,8 @@ def add_plane_projections(ax, curve_pts: np.ndarray, seg_colors: np.ndarray,
                            ctrl_arr: np.ndarray, ctrl_colors: np.ndarray,
                            xlim: tuple[float, float], ylim: tuple[float, float],
                            zlim: tuple[float, float],
-                           alpha: float = 0.35, linewidth: float = 1.5,
-                           point_size: float = 22, degenerate_tol: float = 1e-9) -> None:
+                           keep: float = SHADOW_KEEP, linewidth: float = SHADOW_LINEWIDTH,
+                           point_size: float = 8, degenerate_tol: float = 1e-9) -> None:
     """Disegna l'ombra 2D della traiettoria (e dei punti di controllo) su
     ciascuna delle tre pareti del box 3D (piano XY sul pavimento, XZ e YZ
     sulle pareti), oltre alla curva vera e propria nello spazio.
@@ -135,11 +190,9 @@ def add_plane_projections(ax, curve_pts: np.ndarray, seg_colors: np.ndarray,
     x, y, z = curve_pts[:, 0], curve_pts[:, 1], curve_pts[:, 2]
     cx, cy, cz = ctrl_arr[:, 0], ctrl_arr[:, 1], ctrl_arr[:, 2]
 
-    shadow_colors = seg_colors.copy()
-    shadow_colors[:, 3] = alpha  # riduce l'opacita' mantenendo il gradiente colore
-
-    ctrl_shadow_colors = ctrl_colors.copy()
-    ctrl_shadow_colors[:, 3] = alpha  # stessa opacita' usata per l'ombra della curva
+    # Ombre schiarite (non trasparenti), mantenendo il gradiente di colore.
+    shadow_colors = lighten(seg_colors, keep)
+    ctrl_shadow_colors = lighten(ctrl_colors, keep)
 
     def draw_wall_line(xs: np.ndarray, ys: np.ndarray, zs: np.ndarray) -> None:
         pts = np.column_stack([xs, ys, zs])
@@ -147,10 +200,9 @@ def add_plane_projections(ax, curve_pts: np.ndarray, seg_colors: np.ndarray,
         if np.all(extent < degenerate_tol):
             # Traiettoria degenere su questa parete -> un solo punto: uso un
             # marker (colore a meta' gradiente, piu' opaco) invece della linea.
-            mid_color = seg_colors[len(seg_colors) // 2].copy()
-            mid_color[3] = min(1.0, alpha * 2.5)
+            mid_color = lighten(seg_colors[len(seg_colors) // 2], min(1.0, keep * 2.5))
             ax.scatter([xs[0]], [ys[0]], [zs[0]], color=[mid_color],
-                       s=point_size, zorder=2, edgecolors='none')
+                       s=point_size, zorder=2, edgecolors='none', depthshade=False)
         else:
             segs = np.stack([
                 np.column_stack([xs[:-1], ys[:-1], zs[:-1]]),
@@ -163,12 +215,12 @@ def add_plane_projections(ax, curve_pts: np.ndarray, seg_colors: np.ndarray,
         anchors = [0, -1]
         ax.scatter(xs[anchors], ys[anchors], zs[anchors],
                    color=ctrl_shadow_colors[anchors], marker=_ANC['marker'],
-                   s=_ANC['s'], zorder=1, edgecolors='none')
+                   s=_ANC['s'], zorder=1, edgecolors='none', depthshade=False)
         # Handle (punti di controllo intermedi) -> diamante
         if len(xs) > 2:
             ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1],
                        color=ctrl_shadow_colors[1:-1], marker=_HDL['marker'],
-                       s=_HDL['s'], zorder=1, edgecolors='none')
+                       s=_HDL['s'], zorder=1, edgecolors='none', depthshade=False)
 
     n, nc = len(x), len(cx)
 
@@ -288,29 +340,42 @@ for name, path in PATHS.items():
     xlim, ylim, zlim = XLIM, YLIM, ZLIM
 
     # ---------- Plot 3D con proiezioni sui tre piani ----------
-    fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_subplot(111, projection='3d')
+    fig = plt.figure(figsize=(FIG_SIZE_IN, FIG_SIZE_IN))
+    # Assi quasi su tutta la figura: con i margini predefiniti del subplot il
+    # cubo verrebbe ritagliato. Il margine a destra e in basso tiene dentro la
+    # figura i nomi degli assi, che bbox_inches='tight' non considera quando
+    # cadono fuori; lo spazio vuoto lo toglie poi il ritaglio al salvataggio.
+    ax = fig.add_axes(AXES_RECT, projection='3d')
 
     segs_xyz = np.stack([curve_pts[:-1], curve_pts[1:]], axis=1)
-    ax.add_collection3d(Line3DCollection(segs_xyz, colors=seg_colors, linewidths=2.2, zorder=6))
+    ax.add_collection3d(Line3DCollection(segs_xyz, colors=seg_colors, linewidths=MAIN_LINEWIDTH, zorder=6))
     label_dir = tuple(float(np.sign(lim[1] - lim[0])) for lim in (xlim, ylim, zlim))
     draw_ctrl_numbered_3d(ax, ctrl_arr, ctrl_colors, label_dir=label_dir)  # type: ignore[arg-type]
     add_plane_projections(ax, curve_pts, seg_colors, ctrl_arr, ctrl_colors, xlim, ylim, zlim)
 
-    ax.set(xlabel='X', ylabel=('Z' if SWAP_Y_Z else 'Y'),
-           zlabel=('Y' if SWAP_Y_Z else 'Z'), title=f'{name}')
+    ax.set_xlabel('X', labelpad=LABEL_PAD)
+    ax.set_ylabel('Z' if SWAP_Y_Z else 'Y', labelpad=LABEL_PAD)
+    ax.set_zlabel('Y' if SWAP_Y_Z else 'Z', labelpad=LABEL_PAD)
+    if SHOW_TITLE:
+        ax.set_title(name)
     ax.set_xlim(xlim); ax.set_ylim(ylim); ax.set_zlim(zlim)
+    # Tacche uguali su tutti gli assi, mostrate in millimetri.
+    for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+        axis.set_major_locator(FixedLocator(AXIS_TICKS_M))
+        axis.set_major_formatter(_MM)
+        axis.set_pane_color(PANE_COLOR)
+    ax.tick_params(axis='both', which='major', labelsize=TICK_SIZE_PT, pad=TICK_PAD)
     # Box proporzionale all'estensione di ciascun asse: stessa scala su X, Y
     # e Z, cosi' lunghezze e angoli dei percorsi non vengono deformati.
-    ax.set_box_aspect((abs(xlim[1] - xlim[0]), abs(ylim[1] - ylim[0]), abs(zlim[1] - zlim[0])))
-    ax.grid(True, linestyle='--', alpha=0.35)
+    ax.set_box_aspect((abs(xlim[1] - xlim[0]), abs(ylim[1] - ylim[0]), abs(zlim[1] - zlim[0])),
+                      zoom=BOX_ZOOM)
+    ax.grid(True)
     ax.view_init(elev=VIEW_PITCH, azim=VIEW_YAW, roll=VIEW_ROLL)
 
-    sm = plt.cm.ScalarMappable(cmap=CMAP, norm=ORDER_NORM)
-    sm.set_array([])
-    # cbar = fig.colorbar(sm, ax=ax, shrink=0.7, pad=0.08)
-    # cbar.set_label('Ordine (1 -> N)')
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_FOLDER, f'{name}.png'), dpi=300, bbox_inches='tight')
+    # I nomi degli assi vanno passati esplicitamente: il riquadro calcolato da
+    # bbox_inches='tight' per gli assi 3D esclude quello dell'asse verticale.
+    axis_labels = [ax.xaxis.label, ax.yaxis.label, ax.zaxis.label]
+    for fmt in SAVE_FORMATS:
+        plt.savefig(os.path.join(OUTPUT_FOLDER, f'{name}.{fmt}'), dpi=300,
+                    bbox_inches='tight', pad_inches=0.02, bbox_extra_artists=axis_labels)
     plt.close(fig)
