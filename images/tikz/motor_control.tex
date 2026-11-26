@@ -1,0 +1,166 @@
+% Structures and pathways described in the Neuroscience subsection of Chapter 2.
+% Columns, from left to right: motor learning, thalamic return to the cortex, descending
+% motor chain, ascending somatosensory chain, visual pathway. The arm in contact with the
+% device closes the loops.
+% Grey boxes are structures of the brain and spinal cord; white boxes are the muscles,
+% the sensory receptors, the eyes and the arm.
+% Arrow convention: solid arrows carry plans, motor commands and sensory signals; dashed
+% arrows are copies of the motor command; dotted arrows are learning contributions.
+% An arrow that ends at a box, followed by a new arrow, marks a synaptic relay; an arrow
+% that crosses a box passes through that structure without a synapse. The thalamus
+% appears twice because the somatosensory relay and the relay of basal ganglia and
+% cerebellum towards the cortex are different nuclei, and a single box would lie across
+% the descending motor chain.
+% Requires: \usepackage{tikz}
+%           \usetikzlibrary{arrows.meta, calc}
+\begin{tikzpicture}[
+        area/.style = {draw, thick, rounded corners=2pt, fill=gray!10,
+            text width=48mm, minimum height=12mm, align=center,
+            font=\footnotesize, inner sep=3pt,
+            execute at begin node={\hyphenpenalty=10000}},
+        periphery/.style = {area, fill=white},
+        learner/.style = {area, text width=30mm},
+        note/.style = {font=\footnotesize, align=center},
+        flow/.style = {-{Stealth[length=2.4mm]}, thick},
+        exchange/.style = {{Stealth[length=2.4mm]}-{Stealth[length=2.4mm]}, thick},
+        efference/.style = {-{Stealth[length=2.4mm]}, thick, dashed},
+        learning/.style = {-{Stealth[length=2.4mm]}, thick, densely dotted},
+    ]
+    % Column centres
+    \def\xL{1.6}   % motor learning
+    \def\xT{4.3}   % thalamic return of basal ganglia and cerebellum to the cortex
+    \def\xD{7.9}   % descending motor chain
+    \def\xA{14.7}  % ascending somatosensory chain
+    \def\xV{18.6}  % visual pathway
+    \coordinate (D) at (\xD,0);
+    \coordinate (A) at (\xA,0);
+    \coordinate (Ddir) at (\xD-0.4,0);  % direct corticospinal pathway
+    \coordinate (Dind) at (\xD+0.4,0);  % indirect pathway through brainstem nuclei
+
+    % Goal, state estimation and motor plan
+    \node[area, minimum height=19mm] (pfc) at (\xD,0)
+        {\textbf{\small Prefrontal cortex}\\goal of the movement};
+    \node[area, minimum height=19mm] (ppc) at (\xA,0)
+        {\textbf{\small Posterior parietal cortex}\\targets and state of the body;\\
+        vision and proprioception fused,\\each weighted by its reliability};
+    \node[area, minimum height=25mm] (pm) at (\xD,-3.0)
+        {\textbf{\small Premotor areas}\\dorsal: reaching the target\\
+        ventral: hand shape for grasping\\supplementary motor area:\\
+        self-initiated actions, sequences};
+    \node[area] (s1) at (\xA,-3.0)
+        {\textbf{\small Primary somatosensory}\\\textbf{\small cortex}};
+
+    % Execution
+    \node[area] (m1) at (\xD,-5.8) {\textbf{\small Primary motor cortex}};
+    \node[area] (th) at (\xA,-5.8)
+        {\textbf{\small Thalamus}\\relay of touch\\and proprioception};
+    \node[area, text width=116mm] (bs) at ({(\xD+\xA)/2},-8.1)
+        {\textbf{\small Brainstem}\\ascending and descending signals\\
+        cross to the opposite side};
+    \node[area, text width=116mm, minimum height=17mm] (sc) at ({(\xD+\xA)/2},-10.1) {};
+    \node[note] at ($(sc.north)+(0,-3.5mm)$) {\textbf{\small Spinal cord}};
+
+    % Periphery: muscles, receptors, eyes, and the arm in contact with the device
+    \node[periphery, minimum height=23mm] (mus) at (\xD,-12.6)
+        {\textbf{\small Agonist and antagonist}\\\textbf{\small muscles}\\
+        co-contracted against\\unpredictable external forces};
+    \node[periphery, minimum height=23mm] (rec) at (\xA,-12.6)
+        {\textbf{\small Receptors}\\muscle spindles: length\\and its rate of change\\
+        Golgi tendon organs: force\\skin: touch};
+    \node[periphery, text width=14mm] (eye) at (\xV,-12.6) {\textbf{\small Eyes}};
+    \node[periphery, text width=138mm, anchor=north] (arm) at (12.4,-14.65)
+        {\textbf{\small Arm and hand}, in contact with a haptic device or a robot\\
+        speed profile: superimposition of lognormal strokes};
+
+    % Motor learning
+    \node[learner, minimum height=27mm] (bg) at (\xL,-3.0)
+        {\textbf{\small Basal ganglia}\\reinforcement by\\dopamine: outcome\\
+        against expectation;\\order of the\\target points};
+    \node[learner, minimum height=27mm] (cb) at (\xL,-5.8)
+        {\textbf{\small Cerebellum}\\error between the\\predicted and the\\actual movement;\\
+        sequence of\\motor commands};
+    % Thalamic relay through which basal ganglia and cerebellum return to the cortex
+    \node[draw, thick, rounded corners=2pt, fill=gray!10, minimum width=7mm,
+        minimum height=42mm, inner sep=0pt] (tm) at (\xT,-4.3) {};
+    \node[rotate=90, font=\small\bfseries] at (tm.center) {Thalamus};
+    % Legend, one delay per line, aligned with the left edge of the learning column and
+    % centred vertically in the free space below the sensory input of the cerebellum,
+    % which leaves the spinal cord at the height of its centre; it has no border, since
+    % boxes stand for parts of the body
+    \node[inner sep=4pt, font=\footnotesize, align=center, anchor=west]
+        (delays) at ($(cb.west |- sc.west)!0.5!(cb.west |- arm.south)$)
+        {\textbf{\small Feedback delays}\\[3pt]
+        \begin{tabular}{@{}l@{\hspace{1.2em}}r@{}}
+            spinal reflexes & about 25~ms\\
+            transcortical & 50--100~ms\\
+            voluntary & about 110~ms\\
+            visuomotor loop & 120--150~ms
+        \end{tabular}};
+
+    % Goal and plan
+    \draw[flow] (pfc) -- node[note, left] {goal} (pm);
+    \draw[exchange] (ppc.west) -- node[note, sloped, above] {target and}
+        node[note, sloped, below] {body state} (pm.east);
+
+    % Descending motor chain
+    \draw[flow] (pm) -- node[note, left] {plan in\\task space} (m1);
+    % Direct pathway (left): the corticospinal tract passes through the brainstem without
+    % a synapse, so the arrow crosses the box. Indirect pathway (right): it relays in
+    % motor nuclei of the brainstem, so the arrow stops there and restarts.
+    \draw[flow] (Ddir |- m1.south) -- (Ddir |- sc.north);
+    \draw[flow] (Dind |- m1.south) -- node[note, right, pos=0.4] {motor commands}
+        (Dind |- bs.north);
+    \draw[flow] (Dind |- bs.south) -- (Dind |- sc.north);
+    \draw[flow] (D |- sc.south) -- (mus);
+    \draw[flow] (mus) -- node[note, left] {force} (D |- arm.north);
+
+    % Ascending somatosensory chain: the afferents of touch and proprioception cross the
+    % spinal cord without a synapse, up to the dorsal column nuclei of the medulla; then
+    % synaptic relays in the brainstem, where the signals cross to the opposite side, and
+    % in the thalamus
+    \draw[flow] (A |- arm.north) -- node[note, right] {length, force,\\contact} (rec);
+    \draw[flow] (rec) -- node[note, right, pos=0.1] {afferents} (A |- bs.south);
+    \draw[flow] (A |- bs.north) -- (th);
+    \draw[flow] (th) -- (s1);
+    \draw[flow] (s1) -- node[note, right] {proprioception\\and touch} (ppc);
+
+    % Spinal reflex: a branch of the afferents ends in the grey matter of the spinal cord
+    \coordinate (reflex) at ($(A |- sc.south)+(0,6.5mm)$);
+    \fill (reflex) circle (1.4pt);
+    \draw[flow] (reflex) -- node[note, below] {spinal reflex}
+        ($(D |- reflex)+(6mm,0)$) -- ($(D |- sc.south)+(6mm,0)$);
+
+    % Copy of the motor command, which separates self-generated from external signals
+    \draw[efference] (m1.east) -- node[note, sloped, above] {efference copy}
+        node[note, sloped, below] {self or external} (s1.west);
+    % Copy of the motor commands sent to the cerebellum, which turns it into a prediction
+    % of the sensory feedback and compares it with the actual feedback; it passes below
+    % the thalamic box
+    \coordinate (cbcopy) at ($(Ddir)+(0,-6.75)$);
+    \fill (cbcopy) circle (1.4pt);
+    \draw[efference] (cbcopy) -- node[note, below, pos=0.45] {efference copy}
+        (cb.east |- cbcopy);
+    % The same copy reaches the striatum, through collaterals of the motor cortex axons
+    % directed to the spinal cord, between the cerebellum and the thalamic box
+    \coordinate (bgcopy) at ($(cb.east |- cbcopy)+(3.8mm,0)$);
+    \fill (bgcopy) circle (1.4pt);
+    \draw[efference] (bgcopy) |- ($(bg.east)+(0,-10mm)$);
+
+    % Visual pathway
+    \draw[flow] (eye |- arm.north) -- node[note, left] {hand,\\targets} (eye);
+    \draw[flow] (eye.north) |- node[note, pos=0.25, sloped, above]
+        {dorsal stream: visual guidance of reaching} (ppc.east);
+
+    % Inputs of the learning structures: the basal ganglia receive most of the cortex
+    % (only the prefrontal input is drawn), the cerebellum the sensory signals of the
+    % actual movement, partly through the spinal cord
+    \draw[flow] (pfc.west) -| node[note, above, pos=0.25] {goal} (bg.north);
+    \draw[flow] (sc.west) -| node[note, right, pos=0.75] {actual\\movement} (cb.south);
+
+    % Motor learning: what the basal ganglia and the cerebellum learn returns to the
+    % cortex through a relay in the thalamus
+    \draw[learning] (bg.east) -- (tm.west |- bg.east);
+    \draw[learning] (tm.east |- bg.east) -- (pm.west |- bg.east);
+    \draw[learning] (cb.east) -- (tm.west |- cb.east);
+    \draw[learning] (tm.east |- cb.east) -- (m1.west);
+\end{tikzpicture}%
