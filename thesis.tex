@@ -847,7 +847,7 @@ For every kept stroke $i$, the extraction stores the parameters of Table~\ref{ta
     \subcaptionbox{One stroke\label{fig:reconstruction_example_1}}{\includegraphics[width=0.85\linewidth]{reconstruction/reconstruction_control_example_1.pdf}}\\[1ex]
     \subcaptionbox{Two strokes\label{fig:reconstruction_example_2}}{\includegraphics[width=0.85\linewidth]{reconstruction/reconstruction_control_example_2.pdf}}\\[1ex]
     \subcaptionbox{Three strokes\label{fig:reconstruction_example_3}}{\includegraphics[width=0.85\linewidth]{reconstruction/reconstruction_control_example_3.pdf}}
-    \caption{Reconstruction of three recordings from their extracted parameters. Left: recorded speed (grey), speed profiles of the strokes (colours) and, for several strokes, their sum (dashed); the black dots are the speed minima that delimit the strokes. Right: recorded path (grey) and Bézier segments, one per stroke, in the colour of its lognormal; the black dots are the end points of the segments, the hollow circles the inner control points and the dotted lines join each of them to its end point, along the start or end direction.}
+    \caption{Reconstruction of three recordings from their extracted parameters. Left: recorded speed (grey), speed profiles of the strokes (colours) and, for several strokes, their sum (dashed); the black dots are the speed minima that delimit the strokes. Right: recorded path (grey), waypoints of the task (numbered circles) and Bézier segments, one per stroke, in the colour of its lognormal; the black dots are the end points of the segments, the hollow circles the inner control points and the dotted lines join each of them to its end point, along the start or end direction.}
     \label{fig:reconstruction_examples}
 \end{figure}
 
@@ -1643,12 +1643,7 @@ The calibration of the predicted distributions is shown in Figure~\ref{fig:calib
 
 Finally, Figure~\ref{fig:dpc} and Table~\ref{tab:dpc} compare the strokes generated in free running with the recorded ones, for the same seed, as the determinism varies. The three metrics behave in the same way on all the sets. Precision grows with the determinism and approaches one, since the samples concentrate around the means of the most probable components; density grows too, and exceeds one when the generated strokes crowd the densest region of the recorded ones; coverage reaches its maximum between 0.3 and 0.5 and then collapses, since a more deterministic generator reproduces fewer of the ways in which the subjects executed the strokes. The best compromise between fidelity and diversity lies around $\sym{determinism}=0.3$--$0.5$. The recorded strokes reach a precision of about 0.96, a coverage of about 0.97 and a density of about one against themselves: the generated strokes are mostly plausible, but reproduce only about half of the variety of the recorded ones. On the test tasks the metrics are close to those on the validation tasks, and for the first strokes even to those on the training tasks.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\linewidth]{results/density_precision_coverage.pdf}
-    \caption{Density, precision and coverage of the generated first strokes (top) and later strokes (bottom) against the determinism, for the training, validation and test tasks: mean over the tasks of each set, with a band of one standard deviation over the tasks. The dashed line is the value of the recorded strokes against themselves.}
-    \label{fig:dpc}
-\end{figure}
+Figure~\ref{fig:generation_examples} shows trajectories generated on the four test tasks, with different random seeds, at three values of the determinism. At $\sym{determinism}=1$ the trajectories coincide and pass close to every waypoint; as the determinism decreases, the speed profiles and the paths vary more, and at $\sym{determinism}=0.2$ some strokes overshoot their waypoint or end far from it.
 
 \begin{table}[htbp]
     \centering
@@ -1669,6 +1664,23 @@ Finally, Figure~\ref{fig:dpc} and Table~\ref{tab:dpc} compare the strokes genera
         \bottomrule
     \end{tabular}
 \end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{results/density_precision_coverage.pdf}
+    \caption{Density, precision and coverage of the generated first strokes (top) and later strokes (bottom) against the determinism, for the training, validation and test tasks: mean over the tasks of each set, with a band of one standard deviation over the tasks. The dashed line is the value of the recorded strokes against themselves.}
+    \label{fig:dpc}
+\end{figure}
+
+\begin{figure}[p]
+    \centering
+    \subcaptionbox{\texttt{BURSTs\_YZ}\label{fig:generation_BURSTs_YZ}}{\includegraphics[width=0.72\linewidth]{generation/generation_example_BURSTs_YZ.pdf}}\\[1ex]
+    \subcaptionbox{\texttt{BURSTc\_XZ}\label{fig:generation_BURSTc_XZ}}{\includegraphics[width=0.72\linewidth]{generation/generation_example_BURSTc_XZ.pdf}}\\[1ex]
+    \subcaptionbox{\texttt{REVERSAL\_3D}\label{fig:generation_REVERSAL_3D}}{\includegraphics[width=0.72\linewidth]{generation/generation_example_REVERSAL_3D.pdf}}\\[1ex]
+    \subcaptionbox{\texttt{LETTER\_Z}\label{fig:generation_LETTER_Z}}{\includegraphics[width=0.72\linewidth]{generation/generation_example_LETTER_Z.pdf}}
+    \caption{Trajectories generated by the final network (seed with the median validation loss) on the four test tasks, with different random seeds and with determinism 0.2 (red), 0.5 (yellow) and 1 (green). Left: speed profiles. Right: paths, waypoints of the task (numbered circles) and end points of the generated strokes (dots).}
+    \label{fig:generation_examples}
+\end{figure}
 
 %==============================================================================
 % 5. Conclusion
