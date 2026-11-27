@@ -820,7 +820,7 @@ The arc length $\sym{arclength}_i$ is computed by Gauss--Legendre quadrature wit
 A solution is accepted when every segment meets the length constraint within a relative tolerance, $\lvert \sym{arclength}_i/\sym{amplitude}_i-1\rvert\le\sym{epsl}$; otherwise the recording is discarded.
 
 \paragraph{Extracted parameters}
-For every kept stroke $i$, the extraction stores the parameters of Table~\ref{tab:stroke_parameters}, together with the subject, the task and the position of the stroke in the recording. The lognormal parameters are the solution of Problem~\eqref{eq:lognormal_fit}, the amplitude is given by Equation~\eqref{eq:stroke_amplitude}, the end points are measured, and the directions and tangent lengths are the solution of Problem~\eqref{eq:bezier_fit}. They are enough to rebuild the stroke: the control points follow from Equation~\eqref{eq:control_points}, and the speed along the curve from the lognormal. Since consecutive segments share a direction, the end direction of stroke $i$ is also the start direction of stroke $i+1$.
+For every kept stroke $i$, the extraction stores the parameters of Table~\ref{tab:stroke_parameters}, together with the subject, the task and the position of the stroke in the recording. The lognormal parameters are the solution of Problem~\eqref{eq:lognormal_fit}, the amplitude is given by Equation~\eqref{eq:stroke_amplitude}, the end points are measured, and the directions and tangent lengths are the solution of Problem~\eqref{eq:bezier_fit}. They are enough to rebuild the stroke: the control points follow from Equation~\eqref{eq:control_points}, and the speed along the curve from the lognormal (Figure~\ref{fig:reconstruction_examples}). Since consecutive segments share a direction, the end direction of stroke $i$ is also the start direction of stroke $i+1$.
 
 \begin{table}[htbp]
     \centering
@@ -841,6 +841,15 @@ For every kept stroke $i$, the extraction stores the parameters of Table~\ref{ta
         \bottomrule
     \end{tabular}
 \end{table}
+
+\begin{figure}[p]
+    \centering
+    \subcaptionbox{One stroke\label{fig:reconstruction_example_1}}{\includegraphics[width=0.85\linewidth]{reconstruction/reconstruction_control_example_1.pdf}}\\[1ex]
+    \subcaptionbox{Two strokes\label{fig:reconstruction_example_2}}{\includegraphics[width=0.85\linewidth]{reconstruction/reconstruction_control_example_2.pdf}}\\[1ex]
+    \subcaptionbox{Three strokes\label{fig:reconstruction_example_3}}{\includegraphics[width=0.85\linewidth]{reconstruction/reconstruction_control_example_3.pdf}}
+    \caption{Reconstruction of three recordings from their extracted parameters. Left: recorded speed (grey), speed profiles of the strokes (colours) and, for several strokes, their sum (dashed); the black dots are the speed minima that delimit the strokes. Right: recorded path (grey) and Bézier segments, one per stroke, in the colour of its lognormal; the black dots are the end points of the segments, the hollow circles the inner control points and the dotted lines join each of them to its end point, along the start or end direction.}
+    \label{fig:reconstruction_examples}
+\end{figure}
 
 \subsection{Trajectory Filtering}
 Not all the reconstructed recordings are useful for training. Some are reconstructed poorly, while others come from an incorrect execution of the task, because of errors during the recording session. The first kind of error is easy to spot: the quality of every reconstruction is measured by the mean squared error between the recorded path and the Bézier chain, at equal arc length, and by the human-likeness index of the speed profile~\cite{coccaro}, a signal-to-noise ratio weighted by the ratio between the expected and the extracted number of strokes.
@@ -1301,7 +1310,7 @@ The validation loss of Equation~\eqref{eq:nll_loss}, in nats per stroke, measure
 
 \subsection{Probability Integral Transform}
 \label{sec:pit}
-A small loss does not guarantee that the predicted spread is right. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic}, here in a multivariate form based on highest-density regions. For a recorded stroke $\sym{obs}$ with predicted density $\sym{qtheta}$, computed from its recorded history as for the loss and restricted to the dimensions that exist for the stroke,
+A small loss does not guarantee that the predicted spread is right. The calibration of the predicted distribution is measured by the probability integral transform (PIT)~\cite{gneiting2007probabilistic}, here in a multivariate form based on highest-density (HPD) regions. For a recorded stroke $\sym{obs}$ with predicted density $\sym{qtheta}$, computed from its recorded history as for the loss and restricted to the dimensions that exist for the stroke,
 \begin{equation}
     u=\Pr_{\sym{predsample}\sim \sym{qtheta}}\left[\sym{qtheta}(\sym{predsample})\le \sym{qtheta}(\sym{obs})\right]
 \end{equation}
@@ -1440,7 +1449,7 @@ The loss of information of the representation is measured on every reconstructed
     \label{fig:reconstruction_errors}
 \end{figure}
 
-The geometric representation is accurate: the median distance between the recorded and the reconstructed path is below one millimetre, on paths some ten centimetres long. The kinematic representation is less tight, with a median error of about 31~mm/s on peak speeds of several hundred millimetres per second, and a median signal-to-noise ratio of the speed over the whole recording of 21.3~dB. Its error is lowest for the single strokes, whose speed is a single lognormal, and highest for the letters, whose three strokes overlap; in the recordings inspected, the largest deviations lie in the valleys between consecutive strokes and in the final tail of the movement, where the recorded speed does not follow the shape of a lognormal. Among the paths, the reversals have the largest error, probably because a cubic segment cannot follow the sharp turn of the hand at the reversal point.
+The geometric representation is accurate: the median distance between the recorded and the reconstructed path is below one millimetre, on paths some ten centimetres long. The kinematic representation is less tight, with a median error of about 31~mm/s on peak speeds of several hundred millimetres per second, and a median signal-to-noise ratio of the speed over the whole recording of 21.3~dB. Its error is lowest for the single strokes, whose speed is a single lognormal, and highest for the letters, whose three strokes overlap; in the recordings inspected, such as those of Figure~\ref{fig:reconstruction_examples}, the largest deviations lie in the valleys between consecutive strokes and in the final tail of the movement, where the recorded speed does not follow the shape of a lognormal. Among the paths, the reversals have the largest error, probably because a cubic segment cannot follow the sharp turn of the hand at the reversal point.
 
 \subsection{Data Split}
 \label{sec:data_split}
