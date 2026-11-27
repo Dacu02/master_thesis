@@ -582,9 +582,9 @@ Problem~\eqref{eq:lognormal_fit} is poorly conditioned, because the speed profil
     \sym{tzero}(\sym{sigma})=\sym{tpeak}_k-\frac{\sqrt{\sym{tvar}_k}\,e^{-3\sym{sigma}^2/2}}{\sqrt{e^{\sym{sigma}^2}-1}},
     \label{eq:lognormal_family}
 \end{equation}
-and the members of this family differ only in their skewness. For small $\sym{sigma}$, $\sym{tzero}\simeq\sym{tpeak}_k-\sqrt{\sym{tvar}_k}/\sym{sigma}$ and $\sym{mu}\simeq\tfrac12\ln\sym{tvar}_k-\ln\sym{sigma}$, so that $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}_k}/\sym{sigma}^2$ and $d\sym{mu}/d\sym{sigma}\simeq-1/\sym{sigma}$: a small error on the skewness becomes a large and correlated error on the onset and on the log-time delay. For a stroke with $\sqrt{\sym{tvar}_k}=30$~ms, moving $\sym{sigma}$ from 0.20 to 0.25 delays the onset by about 32~ms and lowers $\sym{mu}$ by about 0.24, while the peak and the width of the bell do not change. As $\sym{sigma}\to0$, the onset goes to $-\infty$, $\sym{mu}$ goes to $+\infty$ and the lognormal tends to a Gaussian: in statistics, the Gaussian is an embedded model of the three-parameter lognormal, a limiting case reached only when two parameters diverge, which makes the estimation ill-conditioned unless the model is reparameterised~\cite{cheng1990embedded,cheng1992embedded}.
+and the members of this family differ only in their skewness. For small $\sym{sigma}$, $\sym{tzero}\simeq\sym{tpeak}_k-\sqrt{\sym{tvar}_k}/\sym{sigma}$ and $\sym{mu}\simeq\tfrac12\ln\sym{tvar}_k-\ln\sym{sigma}$, so that $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}_k}/\sym{sigma}^2$ and $d\sym{mu}/d\sym{sigma}\simeq-1/\sym{sigma}$: a small error on the skewness becomes a large and correlated error on the onset and on the log-time delay. For a stroke with $\sqrt{\sym{tvar}_k}=30$~ms, moving $\sym{sigma}$ from 0.20 to 0.25 delays the onset by about 32~ms and lowers $\sym{mu}$ by about 0.24, while the peak and the width of the bell do not change. As $\sym{sigma}\to0$, the onset goes to $-\infty$, $\sym{mu}$ goes to $+\infty$ and the lognormal tends to a Gaussian with the same peak and width: in statistics, the Gaussian is an embedded model of the three-parameter lognormal, a limiting case reached only when two parameters diverge, which makes the estimation ill-conditioned unless the model is reparameterised~\cite{cheng1990embedded,cheng1992embedded}.
 
-The skewness that tells the members of the family apart lies mostly in the flanks of the bell. The two inflection points of the profile are almost symmetric about the peak, the ratio between their distances from it being $1+\sym{sigma}^3/12$ to leading order, whereas their heights differ already at first order: the logarithm of the ratio between the speed at the later and at the earlier inflection point is $\sym{sigma}\sqrt{1+\sym{sigma}^2/4}$ (Appendix~\ref{app:lognormal_identifiability}). The information on $\sym{sigma}_k$ therefore comes from the heights of the flanks, which is where consecutive strokes overlap and where Equation~\eqref{eq:residual_update} subtracts the tails of the previous strokes: an error in those tails moves $\sym{sigma}_k$ and, through Equation~\eqref{eq:lognormal_family}, also $\sym{tzero}_k$ and $\sym{mu}_k$.
+The skewness that tells the members of the family apart lies mostly in the flanks of the bell, and the extraction algorithms of the Kinematic Theory recover the three parameters of a stroke from its peak and its two inflection points~\cite[Sec.~II-B]{idelog}. The information on $\sym{sigma}_k$ therefore comes from the flanks, which is where consecutive strokes overlap and where Equation~\eqref{eq:residual_update} subtracts the tails of the previous strokes: an error in those tails moves $\sym{sigma}_k$ and, through Equation~\eqref{eq:lognormal_family}, also $\sym{tzero}_k$ and $\sym{mu}_k$.
 
 Only the strokes that carry the movement are kept. The peak speed of a stroke, found at peak time $\sym{tzero}_k+e^{\sym{mu}_k-\sym{sigma}_k^2}$
 \begin{equation}
@@ -1698,46 +1698,6 @@ Achieving these results with sources of bias not fully removed and with a networ
 % Appendix
 %==============================================================================
 \appendix
-\chapter{Identifiability of the Lognormal \mbox{Parameters}}
-\label{app:lognormal_identifiability}
-This appendix derives the results on the lognormal speed profile used in Section~\ref{sec:data_processing_system}: the family of profiles with the same peak and the same width, its behaviour for small log-response times, and the position and the height of the inflection points. Throughout, $\sym{logtime}=\ln(t-\sym{tzero})$: when $t$ is distributed according to $\sym{lognormal}(t;\sym{tzero},\sym{mu},\sym{sigma}^2)$, $\sym{logtime}$ is normally distributed with mean $\sym{mu}$ and variance $\sym{sigma}^2$.
-
-\paragraph{Moments}
-Seen as a density over time, the lognormal has its mode at $\sym{tpeak}=\sym{tzero}+e^{\sym{mu}-\sym{sigma}^2}$, mean $\sym{tzero}+e^{\sym{mu}+\sym{sigma}^2/2}$, variance $\sym{tvar}=e^{2\sym{mu}+\sym{sigma}^2}\big(e^{\sym{sigma}^2}-1\big)$ and skewness $\big(e^{\sym{sigma}^2}+2\big)\sqrt{e^{\sym{sigma}^2}-1}=3\sym{sigma}+O(\sym{sigma}^3)$.
-
-\paragraph{Family of equivalent profiles}
-Solving the expression of $\sym{tvar}$ for $\sym{mu}$, and that of $\sym{tpeak}$ for $\sym{tzero}$, gives Equation~\eqref{eq:lognormal_family}: for given $\sym{tpeak}$ and $\sym{tvar}$, every $\sym{sigma}>0$ defines a profile with that mode and that variance. Since $e^{\sym{sigma}^2}-1=\sym{sigma}^2\big(1+\sym{sigma}^2/2+O(\sym{sigma}^4)\big)$, for small $\sym{sigma}$
-\begin{equation}
-    \sym{mu}=\tfrac12\ln\sym{tvar}-\ln\sym{sigma}-\tfrac34\sym{sigma}^2+O(\sym{sigma}^4),\qquad
-    \sym{tzero}=\sym{tpeak}-\sqrt{\sym{tvar}}\left(\frac{1}{\sym{sigma}}-\frac{7}{4}\sym{sigma}+O(\sym{sigma}^3)\right),
-\end{equation}
-whose leading terms give the sensitivities $d\sym{mu}/d\sym{sigma}\simeq-1/\sym{sigma}$ and $d\sym{tzero}/d\sym{sigma}\simeq\sqrt{\sym{tvar}}/\sym{sigma}^2$ of Section~\ref{sec:data_processing_system}. As $\sym{sigma}\to0$, the onset goes to $-\infty$ and $\sym{mu}$ to $+\infty$, while the profile tends to a Gaussian with mean $\sym{tpeak}$ and variance $\sym{tvar}$. Indeed, $\sym{logtime}$ has standard deviation $\sym{sigma}$, so to first order in $\sym{sigma}$ the time $t-\sym{tzero}=e^{\sym{logtime}}$ is normal with mean $e^{\sym{mu}}$ and standard deviation $\sym{sigma}e^{\sym{mu}}$; along the family, $\sym{sigma}e^{\sym{mu}}=\sqrt{\sym{tvar}}+O(\sym{sigma}^2)$ and $\sym{tzero}+e^{\sym{mu}}=\sym{tpeak}+O(\sym{sigma})$.
-
-\paragraph{Inflection points}
-Since $\ln\sym{lognormal}=-\sym{logtime}-(\sym{logtime}-\sym{mu})^2/(2\sym{sigma}^2)+\text{const}$ and $d\sym{logtime}/dt=e^{-\sym{logtime}}$, the logarithmic derivative of the profile is
-\begin{equation}
-    \frac{d\ln\sym{lognormal}}{dt}=-e^{-\sym{logtime}}\,a,\qquad a=1+\frac{\sym{logtime}-\sym{mu}}{\sym{sigma}^2},
-\end{equation}
-which vanishes at the peak, where $\sym{logtime}=\sym{mu}-\sym{sigma}^2$. The profile has an inflection point where $\sym{lognormal}''/\sym{lognormal}=(\ln\sym{lognormal})''+\big((\ln\sym{lognormal})'\big)^2=e^{-2\sym{logtime}}\big(a^2+a-1/\sym{sigma}^2\big)$ vanishes. The two roots of $a^2+a-1/\sym{sigma}^2=0$ place the inflection points after ($+$) and before ($-$) the peak at
-\begin{equation}
-    \Delta\sym{logtime}_\pm=\sym{logtime}_\pm-\left(\sym{mu}-\sym{sigma}^2\right)=-\frac{\sym{sigma}^2}{2}\pm\sym{sigma}\sqrt{1+\frac{\sym{sigma}^2}{4}}.
-\end{equation}
-Substituting into $\ln\sym{lognormal}$, their heights relative to the peak are
-\begin{equation}
-    \frac{\sym{lognormal}(t_\pm)}{\sym{lognormal}(\sym{tpeak})}=\exp\left(-\frac{\Delta\sym{logtime}_\pm^2}{2\sym{sigma}^2}\right)=e^{-1/2}\left(1\pm\frac{\sym{sigma}}{2}+O(\sym{sigma}^2)\right),
-\end{equation}
-so both flanks lie at about 61\,\% of the peak, and the logarithm of the ratio between the later and the earlier height is, exactly,
-\begin{equation}
-    \ln\frac{\sym{lognormal}(t_+)}{\sym{lognormal}(t_-)}=\frac{\Delta\sym{logtime}_-^2-\Delta\sym{logtime}_+^2}{2\sym{sigma}^2}=\sym{sigma}\sqrt{1+\frac{\sym{sigma}^2}{4}}.
-\end{equation}
-The distances of the inflection points from the peak are $e^{\sym{mu}-\sym{sigma}^2}\big(e^{\Delta\sym{logtime}_+}-1\big)$ and $e^{\sym{mu}-\sym{sigma}^2}\big(1-e^{\Delta\sym{logtime}_-}\big)$, and their ratio is
-\begin{equation}
-    \frac{e^{\Delta\sym{logtime}_+}-1}{1-e^{\Delta\sym{logtime}_-}}=1+\frac{\sym{sigma}^3}{12}+O(\sym{sigma}^5).
-\end{equation}
-
-\paragraph{Consequence}
-The times of the inflection points are almost symmetric about the peak, the difference between their distances from it being below 0.3\,\% for $\sym{sigma}\le0.3$, whereas their heights differ already at first order in $\sym{sigma}$. The information on $\sym{sigma}$ is therefore carried by the heights of the flanks. If $\sym{sigma}$ were read from the ratio of the two heights alone, a spurious contribution of 3\,\% of the peak speed on one flank, about 5\,\% of the speed there, would change it by about 0.05. In the fit of Problem~\eqref{eq:lognormal_fit} the effect is spread over all the samples of the window, but it acts on the same part of the profile, where consecutive strokes overlap.
-
 \chapter{Waypoints of the Tasks}
 \label{app:task_coordinates}
 Table~\ref{tab:task_coordinates} lists the waypoints of the sixteen tasks of Table~\ref{tab:tasks}, in the order in which they are reached, in the frame of the device and in millimetres, with the $Y$ axis vertical. They are the waypoints shown in Figures~\ref{fig:tasks_single}, \ref{fig:tasks_two} and~\ref{fig:tasks_letters}, and the angles of Table~\ref{tab:tasks} follow from them.
