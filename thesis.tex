@@ -76,6 +76,20 @@
 %   {\normalfont\bfseries}{}{0em}{}
 \titlespacing*{\paragraph}
   {0pt}{1.2em}{0.6em}
+
+% Figures and tables may float, but never past the start of the next section or
+% subsection: \FloatBarrier (placeins) outputs the pending floats before the heading.
+\usepackage{placeins}
+\preto\section{\FloatBarrier}
+\preto\subsection{\FloatBarrier}
+% Let more and larger floats share a page with text, so that they fit before the barrier
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{3}
+\setcounter{totalnumber}{6}
   
 % \setlength{\parindent}{0pt} % No tab a inizio paragrafo
 
